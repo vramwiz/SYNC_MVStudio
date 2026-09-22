@@ -1,0 +1,48 @@
+﻿[
+  {
+    "id": "VRAMWIZ.SYNC_MVStudio",
+    "name": "MVスタジオ",
+    "type": "フィルタプラグイン",
+    "summary": "今どきのMV制作を支援するプラグイン",
+    "description": "https://raw.githubusercontent.com/vramwiz/SYNC_MVStudio/main/README.md",
+    "author": "VRAMの魔術師",
+    "repoURL": "https://github.com/vramwiz/SYNC_MVStudio/",
+    "licenses": [
+      {
+        "type": "GPL-3.0-only",
+        "isCustom": false,
+        "copyrights": [],
+        "licenseBody": ""
+      }
+    ],
+    "tags": ["MV", "映像", "Skia"],
+    "dependencies": [],
+    "images": [],
+    "installer": {
+      "source": {
+        "type": "githubRelease",
+        "owner": "vramwiz",
+        "repo": "SYNC_MVStudio",
+        "pattern": "^SYNC_MVStudio\\.zip$",
+        "github": {
+          "owner": "vramwiz",
+          "repo": "SYNC_MVStudio",
+          "pattern": "^SYNC_MVStudio\\.zip$"
+        }
+      },
+      "install": [
+        { "action": "download" },
+        { "action": "extract" },
+        {
+          "action": "copy",
+          "from": "{tmp}/SYNC_MVStudio",
+          "to": "{pluginsDir}/SYNC_MVStudio"
+        }
+      ],
+      "uninstall": [
+        { "action": "delete", "path": "{pluginsDir}/SYNC_MVStudio" }
+      ]
+    },
+    "version": []
+  }
+]

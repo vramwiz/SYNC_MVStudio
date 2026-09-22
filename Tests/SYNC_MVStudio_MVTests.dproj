@@ -1,0 +1,24 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <ProjectGuid>{19BD202E-B688-48EE-A571-1E3E08092D24}</ProjectGuid>
+    <ProjectVersion>20.4</ProjectVersion>
+    <FrameworkType>VCL</FrameworkType>
+    <Config Condition="'$(Config)'==''">Debug</Config>
+    <Platform>Win64</Platform>
+    <MainSource>SYNC_MVStudio_MVTests.dpr</MainSource>
+    <AppType>Console</AppType>
+    <TargetedPlatforms>2</TargetedPlatforms>
+    <DCC_Namespace>System;Winapi;Vcl;$(DCC_Namespace)</DCC_Namespace>
+    <DCC_Define>SKIA_DEFERRED_INIT;$(DCC_Define)</DCC_Define>
+    <DCC_DcuOutput>Win64\$(Config)\DCU</DCC_DcuOutput>
+    <DCC_ExeOutput>Win64\$(Config)</DCC_ExeOutput>
+    <DCC_IntegerOverflowCheck>true</DCC_IntegerOverflowCheck>
+    <DCC_RangeChecking>true</DCC_RangeChecking>
+    <PreBuildEvent><![CDATA[powershell -NoProfile -ExecutionPolicy Bypass -File "$(MSBuildProjectDirectory)\..\Scripts\PrepareSkiaUnit.ps1" -BdsRoot "$(BDS)" -ProjectRoot "$(MSBuildProjectDirectory)\.."]]></PreBuildEvent>
+    <PostBuildEvent><![CDATA[copy /Y "$(BDS)\bin64\sk4d.dll" "$(MSBuildProjectDirectory)\Win64\$(Config)\sk4d.dll"]]></PostBuildEvent>
+  </PropertyGroup>
+  <ItemGroup>
+    <DelphiCompile Include="$(MainSource)"><MainSource>MainSource</MainSource></DelphiCompile>
+  </ItemGroup>
+  <Import Project="$(BDS)\Bin\CodeGear.Delphi.Targets"/>
+</Project>

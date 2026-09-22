@@ -1,0 +1,8 @@
+﻿# Third-party notices
+
+Google Skiaを使用するDelphiのSystem.Skiaとsk4d.dll、および参照元SYNC_Lyricsの
+TextRenderer共通部を使用します。Delphi同梱ランタイムのライセンス条件に従って配布してください。
+公開配布時には使用するsk4d.dllに対応するSkia / Skia4Delphiのライセンス表記を確認・同梱します。
+
+FFmpegおよびカラーピッカーはプロジェクトから除外しており、配布しません。
+プロジェクト自身のライセンスはLICENSEを参照してください。

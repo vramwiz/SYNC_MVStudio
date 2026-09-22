@@ -1,0 +1,221 @@
+﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <PropertyGroup>
+        <ProjectGuid>{10861864-FB5A-4EF9-A621-F305DC8789CD}</ProjectGuid>
+        <ProjectVersion>20.4</ProjectVersion>
+        <FrameworkType>None</FrameworkType>
+        <Config Condition="'$(Config)'==''">Debug</Config>
+        <Platform Condition="'$(Platform)'==''">Win64</Platform>
+        <ProjectName Condition="'$(ProjectName)'==''">SYNC_MVStudio_Filter</ProjectName>
+        <TargetedPlatforms>2</TargetedPlatforms>
+        <AppType>Library</AppType>
+        <MainSource>SYNC_MVStudio_Filter.dpr</MainSource>
+        <Base>True</Base>
+    </PropertyGroup>
+    <PropertyGroup>
+        <GenDll>true</GenDll>
+        <DCC_DcuOutput>.\$(Platform)\$(Config)\DCU</DCC_DcuOutput>
+        <DCC_ExeOutput>.\$(Platform)\$(Config)</DCC_ExeOutput>
+        <DCC_E>false</DCC_E>
+        <DCC_N>false</DCC_N>
+        <DCC_S>false</DCC_S>
+        <DCC_F>false</DCC_F>
+        <DCC_K>false</DCC_K>
+        <DCC_Namespace>System;Xml;Data;Datasnap;Web;Soap;Winapi;Vcl;$(DCC_Namespace)</DCC_Namespace>
+        <SanitizedProjectName>SYNC_MVStudio_Filter</SanitizedProjectName>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Config)'=='Base' or '$(Base)'!=''">
+        <Base>true</Base>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Config)'=='Debug' or '$(Cfg_1)'!=''">
+        <Cfg_1>true</Cfg_1>
+        <CfgParent>Base</CfgParent>
+        <Base>true</Base>
+    </PropertyGroup>
+    <PropertyGroup Condition="('$(Platform)'=='Win64' and '$(Cfg_1)'=='true') or '$(Cfg_1_Win64)'!=''">
+        <Cfg_1_Win64>true</Cfg_1_Win64>
+        <CfgParent>Cfg_1</CfgParent>
+        <Cfg_1>true</Cfg_1>
+        <Base>true</Base>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Config)'=='Release' or '$(Cfg_2)'!=''">
+        <Cfg_2>true</Cfg_2>
+        <CfgParent>Base</CfgParent>
+        <Base>true</Base>
+    </PropertyGroup>
+    <PropertyGroup Condition="('$(Platform)'=='Win64' and '$(Cfg_2)'=='true') or '$(Cfg_2_Win64)'!=''">
+        <Cfg_2_Win64>true</Cfg_2_Win64>
+        <CfgParent>Cfg_2</CfgParent>
+        <Cfg_2>true</Cfg_2>
+        <Base>true</Base>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Base)'!=''">
+        <GenDll>true</GenDll>
+        <DCC_Define>SKIA_DEFERRED_INIT;$(DCC_Define)</DCC_Define>
+        <SanitizedProjectName>SYNC_MVStudio_Filter</SanitizedProjectName>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Cfg_1)'!=''">
+        <BT_BuildType>Debug</BT_BuildType>
+        <DCC_Define>DEBUG;$(DCC_Define)</DCC_Define>
+        <DCC_DebugDCUs>true</DCC_DebugDCUs>
+        <DCC_Optimize>false</DCC_Optimize>
+        <DCC_GenerateStackFrames>true</DCC_GenerateStackFrames>
+        <DCC_DebugInfoInExe>true</DCC_DebugInfoInExe>
+        <DCC_RemoteDebug>true</DCC_RemoteDebug>
+        <DCC_IntegerOverflowCheck>true</DCC_IntegerOverflowCheck>
+        <DCC_RangeChecking>true</DCC_RangeChecking>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Cfg_1_Win64)'!=''">
+        <Manifest_File>(なし)</Manifest_File>
+        <AppDPIAwarenessMode>none</AppDPIAwarenessMode>
+        <DCC_ExeOutput>C:\ProgramData\aviutl2\Plugin\SYNC_MVStudio</DCC_ExeOutput>
+        <PreBuildEvent><![CDATA[powershell -NoProfile -ExecutionPolicy Bypass -File "$(MSBuildProjectDirectory)\Scripts\PrepareSkiaUnit.ps1" -BdsRoot "$(BDS)" -ProjectRoot "$(MSBuildProjectDirectory)"&&if not exist "C:\ProgramData\aviutl2\Plugin\SYNC_MVStudio" mkdir "C:\ProgramData\aviutl2\Plugin\SYNC_MVStudio"]]></PreBuildEvent>
+        <PreBuildEventIgnoreExitCode>False</PreBuildEventIgnoreExitCode>
+        <PostBuildEvent><![CDATA[copy /Y "C:\ProgramData\aviutl2\Plugin\SYNC_MVStudio\$(PROJECTNAME).dll" "C:\ProgramData\aviutl2\Plugin\SYNC_MVStudio\$(PROJECTNAME).auf2"&&copy /Y "$(BDS)\bin64\sk4d.dll" "C:\ProgramData\aviutl2\Plugin\SYNC_MVStudio\sk4d.dll.new"&&move /Y "C:\ProgramData\aviutl2\Plugin\SYNC_MVStudio\sk4d.dll.new" "C:\ProgramData\aviutl2\Plugin\SYNC_MVStudio\sk4d.dll"]]></PostBuildEvent>
+        <PostBuildEventIgnoreExitCode>False</PostBuildEventIgnoreExitCode>
+        <Debugger_HostApplication>D:\aviutl2_v2.1.3a\aviutl2.exe</Debugger_HostApplication>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Cfg_2)'!=''">
+        <BT_BuildType>Release</BT_BuildType>
+        <DCC_LocalDebugSymbols>false</DCC_LocalDebugSymbols>
+        <DCC_Define>RELEASE;$(DCC_Define)</DCC_Define>
+        <DCC_SymbolReferenceInfo>0</DCC_SymbolReferenceInfo>
+        <DCC_DebugInformation>0</DCC_DebugInformation>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Cfg_2_Win64)'!=''">
+        <Manifest_File>(なし)</Manifest_File>
+        <AppDPIAwarenessMode>none</AppDPIAwarenessMode>
+        <DCC_ExeOutput>C:\ProgramData\aviutl2\Plugin\SYNC_MVStudio</DCC_ExeOutput>
+        <PreBuildEvent><![CDATA[powershell -NoProfile -ExecutionPolicy Bypass -File "$(MSBuildProjectDirectory)\Scripts\PrepareSkiaUnit.ps1" -BdsRoot "$(BDS)" -ProjectRoot "$(MSBuildProjectDirectory)"&&if not exist "C:\ProgramData\aviutl2\Plugin\SYNC_MVStudio" mkdir "C:\ProgramData\aviutl2\Plugin\SYNC_MVStudio"]]></PreBuildEvent>
+        <PreBuildEventIgnoreExitCode>False</PreBuildEventIgnoreExitCode>
+        <PostBuildEvent><![CDATA[copy /Y "C:\ProgramData\aviutl2\Plugin\SYNC_MVStudio\$(PROJECTNAME).dll" "C:\ProgramData\aviutl2\Plugin\SYNC_MVStudio\$(PROJECTNAME).auf2"&&copy /Y "$(BDS)\bin64\sk4d.dll" "C:\ProgramData\aviutl2\Plugin\SYNC_MVStudio\sk4d.dll.new"&&move /Y "C:\ProgramData\aviutl2\Plugin\SYNC_MVStudio\sk4d.dll.new" "C:\ProgramData\aviutl2\Plugin\SYNC_MVStudio\sk4d.dll"&&if exist "C:\ProgramData\aviutl2\Plugin\SYNC_MVStudio\$(PROJECTNAME).dll" del /Q "C:\ProgramData\aviutl2\Plugin\SYNC_MVStudio\$(PROJECTNAME).dll"&&if exist "C:\ProgramData\aviutl2\Plugin\SYNC_MVStudio\$(PROJECTNAME).rsm" del /Q "C:\ProgramData\aviutl2\Plugin\SYNC_MVStudio\$(PROJECTNAME).rsm"]]></PostBuildEvent>
+        <PostBuildEventIgnoreExitCode>False</PostBuildEventIgnoreExitCode>
+        <Debugger_HostApplication>D:\aviutl2_v2.1.3a\aviutl2.exe</Debugger_HostApplication>
+    </PropertyGroup>
+    <ItemGroup>
+        <DelphiCompile Include="$(MainSource)">
+            <MainSource>MainSource</MainSource>
+        </DelphiCompile>
+        <DCCReference Include="Win64\SkiaOverride\System.Skia.pas"/>
+        <DCCReference Include="Source\Lib\FilterTable\PluginFilterTable.pas"/>
+        <DCCReference Include="Source\Lib\AviUtl2FilterTypes.pas"/>
+        <DCCReference Include="Source\Plugin\Filter\SYNC_MVStudio_FilterPlugin.pas"/>
+        <DCCReference Include="Source\Lib\TextRenderer\TextRenderer.pas"/>
+        <DCCReference Include="Source\Lib\TextRenderer\TextRendererSkia.pas"/>
+        <DCCReference Include="Source\Lib\TextRenderer\TextRendererSkiaBootstrap.pas"/>
+        <DCCReference Include="Source\Lib\TextRenderer\TextRendererSkiaRuntime.pas"/>
+        <DCCReference Include="Source\Lib\TextRenderer\TextRendererTypes.pas"/>
+        <DCCReference Include="Source\Core\Animation\Model\MVAnimationTypes.pas"/>
+        <DCCReference Include="Source\Core\Animation\Model\MVAnimationTime.pas"/>
+        <DCCReference Include="Source\Core\Animation\Model\MVAnimationSequence.pas"/>
+        <DCCReference Include="Source\Core\Animation\Model\MVAppearanceTypes.pas"/>
+        <DCCReference Include="Source\Core\Animation\Model\MVPositionMotionTypes.pas"/>
+        <DCCReference Include="Source\Core\Animation\MVPositionMotion.pas"/>
+        <DCCReference Include="Source\Core\Storage\MVPositionMotionJson.pas"/>
+        <DCCReference Include="Source\Plugin\Filter\Settings\MVPositionMotionFilterSettings.pas"/>
+        <DCCReference Include="Source\Core\Storage\MVAppearanceJson.pas"/>
+        <DCCReference Include="Source\Plugin\Filter\Settings\MVAppearanceFilterSettings.pas"/>
+        <DCCReference Include="Source\Rendering\Effects\MVAppearanceRenderer.pas"/>
+        <DCCReference Include="Source\Core\Animation\Model\MVTransitionTiming.pas"/>
+        <DCCReference Include="Source\Core\Animation\Shapes\MVShapeTypes.pas"/>
+        <DCCReference Include="Source\Core\Animation\Shapes\MVShapeAnimation.pas"/>
+        <DCCReference Include="Source\Rendering\Effects\MVShapeRenderer.pas"/>
+        <DCCReference Include="Source\Rendering\Effects\MVAnimatedBounds.pas"/>
+        <DCCReference Include="Source\Plugin\Filter\Settings\MVShapeFilterSettings.pas"/>
+        <DCCReference Include="Source\Core\Animation\MVAnimationCatalog.pas"/>
+        <DCCReference Include="Source\Core\Animation\Transitions\MVTransitionBasic.pas"/>
+        <DCCReference Include="Source\Core\Animation\Transitions\MVTransitionExtended.pas"/>
+        <DCCReference Include="Source\Core\Animation\Holds\MVHoldBasic.pas"/>
+        <DCCReference Include="Source\Core\Animation\Holds\MVHoldExtended.pas"/>
+        <DCCReference Include="Source\Rendering\Effects\MVGlyphEffects.pas"/>
+        <DCCReference Include="Source\Core\Animation\Transitions\MVTransitionMovement.pas"/>
+        <DCCReference Include="Source\Core\Animation\Transitions\MVTransitionScale.pas"/>
+        <DCCReference Include="Source\Core\Animation\Transitions\MVTransitionMasks.pas"/>
+        <DCCReference Include="Source\Core\Animation\Transitions\MVTransitionScatter.pas"/>
+        <DCCReference Include="Source\Core\Animation\Transitions\MVTransitionKinetic.pas"/>
+        <DCCReference Include="Source\Core\Animation\Transitions\MVTransitionPattern.pas"/>
+        <DCCReference Include="Source\Core\Animation\Transitions\MVTransitionPath.pas"/>
+        <DCCReference Include="Source\Core\Animation\Holds\MVHoldKinetic.pas"/>
+        <DCCReference Include="Source\Core\Animation\Holds\MVHoldAccent.pas"/>
+        <DCCReference Include="Source\Rendering\Effects\MVGlyphPatterns.pas"/>
+        <DCCReference Include="Source\Core\Animation\MVAnimation.pas"/>
+        <DCCReference Include="Source\Core\Model\MVBackgroundFrame.pas"/>
+        <DCCReference Include="Source\Plugin\Filter\Editor\MVEditorBackground.pas"/>
+        <DCCReference Include="Source\Core\Model\MVStyleTypes.pas"/>
+        <DCCReference Include="Source\Core\Storage\MVStyleJson.pas"/>
+        <DCCReference Include="Source\Rendering\Effects\MVGlyphDecoration.pas"/>
+        <DCCReference Include="Source\Editor\Interaction\MVArrangement.pas"/>
+        <DCCReference Include="Source\Core\Model\MVDocument.pas"/>
+        <DCCReference Include="Source\Core\Model\MVGrouping.pas"/>
+        <DCCReference Include="Source\Core\Model\MVTextUnits.pas"/>
+        <DCCReference Include="Source\Core\Storage\MVStoredDocument.pas"/>
+        <DCCReference Include="Source\Plugin\Filter\Editor\MVEditorCommit.pas"/>
+        <DCCReference Include="Source\Core\Storage\MVDocumentJson.pas"/>
+        <DCCReference Include="Source\Rendering\MVLayout.pas"/>
+        <DCCReference Include="Source\Rendering\MVAnimationGroups.pas"/>
+        <DCCReference Include="Source\Rendering\Effects\MVGroupEffects.pas"/>
+        <DCCReference Include="Source\Rendering\MVRenderer.pas"/>
+        <DCCReference Include="Source\Editor\Interaction\MVSelection.pas"/>
+        <DCCReference Include="Source\Editor\Interaction\MVTransformGeometry.pas"/>
+        <DCCReference Include="Source\Editor\Canvas\MVCanvasPainter.pas"/>
+        <DCCReference Include="Source\Editor\Canvas\MVCanvasViewport.pas"/>
+        <DCCReference Include="Source\Editor\Canvas\MVSelectionOverlay.pas"/>
+        <DCCReference Include="Source\Editor\Toolbar\MVFontToolbar.pas"/>
+        <DCCReference Include="Source\Editor\Canvas\MVEditorCanvas.pas"/>
+        <DCCReference Include="Source\Editor\Model\MVEditSession.pas"/>
+        <DCCReference Include="Source\Editor\Toolbar\MVPlacementToolbar.pas"/>
+        <DCCReference Include="Source\Core\Model\MVPlacementDocument.pas"/>
+        <DCCReference Include="Source\Editor\Shell\MVEditorForm.pas"/>
+        <DCCReference Include="Source\Plugin\Filter\Context\MVContextRegistry.pas"/>
+        <DCCReference Include="Source\Plugin\Filter\Context\MVFilterContext.pas"/>
+        <DCCReference Include="Source\Plugin\Filter\Settings\MVFilterSettings.pas"/>
+        <DCCReference Include="Source\Plugin\Filter\Editor\MVEditorLegacy.pas"/>
+        <DCCReference Include="Source\Plugin\Filter\Editor\MVHostText.pas"/>
+        <DCCReference Include="Source\Plugin\Filter\Editor\MVEditorHost.pas"/>
+        <BuildConfiguration Include="Base">
+            <Key>Base</Key>
+        </BuildConfiguration>
+        <BuildConfiguration Include="Debug">
+            <Key>Cfg_1</Key>
+            <CfgParent>Base</CfgParent>
+        </BuildConfiguration>
+        <BuildConfiguration Include="Release">
+            <Key>Cfg_2</Key>
+            <CfgParent>Base</CfgParent>
+        </BuildConfiguration>
+    </ItemGroup>
+    <ProjectExtensions>
+        <Borland.Personality>Delphi.Personality.12</Borland.Personality>
+        <Borland.ProjectType>Application</Borland.ProjectType>
+        <BorlandProject>
+            <Delphi.Personality>
+                <Source>
+                    <Source Name="MainSource">SYNC_MVStudio_Filter.dpr</Source>
+                </Source>
+            </Delphi.Personality>
+            <Platforms>
+                <Platform value="Win32">False</Platform>
+                <Platform value="Win64">True</Platform>
+            </Platforms>
+        </BorlandProject>
+        <ProjectFileVersion>12</ProjectFileVersion>
+    </ProjectExtensions>
+    <Import Project="$(BDS)\Bin\CodeGear.Delphi.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Delphi.Targets')"/>
+    <Import Project="$(APPDATA)\Embarcadero\$(BDSAPPDATABASEDIR)\$(PRODUCTVERSION)\UserTools.proj" Condition="Exists('$(APPDATA)\Embarcadero\$(BDSAPPDATABASEDIR)\$(PRODUCTVERSION)\UserTools.proj')"/>
+    <Import Project="$(MSBuildProjectName).deployproj" Condition="Exists('$(MSBuildProjectName).deployproj')"/>
+    <PropertyGroup Condition="'$(Config)'=='Debug' And '$(Platform)'=='Win64'">
+        <PreBuildEvent>powershell -NoProfile -ExecutionPolicy Bypass -File &quot;$(MSBuildProjectDirectory)\Scripts\PrepareSkiaUnit.ps1&quot; -BdsRoot &quot;$(BDS)&quot; -ProjectRoot &quot;$(MSBuildProjectDirectory)&quot;&amp;&amp;if not exist &quot;C:\ProgramData\aviutl2\Plugin\SYNC_MVStudio&quot; mkdir &quot;C:\ProgramData\aviutl2\Plugin\SYNC_MVStudio&quot;</PreBuildEvent>
+        <PreBuildEventIgnoreExitCode>False</PreBuildEventIgnoreExitCode>
+        <PreLinkEvent/>
+        <PreLinkEventIgnoreExitCode>False</PreLinkEventIgnoreExitCode>
+        <PostBuildEvent>copy /Y &quot;C:\ProgramData\aviutl2\Plugin\SYNC_MVStudio\$(PROJECTNAME).dll&quot; &quot;C:\ProgramData\aviutl2\Plugin\SYNC_MVStudio\$(PROJECTNAME).auf2&quot;&amp;&amp;copy /Y &quot;$(BDS)\bin64\sk4d.dll&quot; &quot;C:\ProgramData\aviutl2\Plugin\SYNC_MVStudio\sk4d.dll.new&quot;&amp;&amp;move /Y &quot;C:\ProgramData\aviutl2\Plugin\SYNC_MVStudio\sk4d.dll.new&quot; &quot;C:\ProgramData\aviutl2\Plugin\SYNC_MVStudio\sk4d.dll&quot;</PostBuildEvent>
+        <PostBuildEventIgnoreExitCode>False</PostBuildEventIgnoreExitCode>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Config)'=='Release' And '$(Platform)'=='Win64'">
+        <PreBuildEvent>powershell -NoProfile -ExecutionPolicy Bypass -File &quot;$(MSBuildProjectDirectory)\Scripts\PrepareSkiaUnit.ps1&quot; -BdsRoot &quot;$(BDS)&quot; -ProjectRoot &quot;$(MSBuildProjectDirectory)&quot;&amp;&amp;if not exist &quot;C:\ProgramData\aviutl2\Plugin\SYNC_MVStudio&quot; mkdir &quot;C:\ProgramData\aviutl2\Plugin\SYNC_MVStudio&quot;</PreBuildEvent>
+        <PreBuildEventIgnoreExitCode>False</PreBuildEventIgnoreExitCode>
+        <PreLinkEvent/>
+        <PreLinkEventIgnoreExitCode>False</PreLinkEventIgnoreExitCode>
+        <PostBuildEvent>copy /Y &quot;C:\ProgramData\aviutl2\Plugin\SYNC_MVStudio\$(PROJECTNAME).dll&quot; &quot;C:\ProgramData\aviutl2\Plugin\SYNC_MVStudio\$(PROJECTNAME).auf2&quot;&amp;&amp;copy /Y &quot;$(BDS)\bin64\sk4d.dll&quot; &quot;C:\ProgramData\aviutl2\Plugin\SYNC_MVStudio\sk4d.dll.new&quot;&amp;&amp;move /Y &quot;C:\ProgramData\aviutl2\Plugin\SYNC_MVStudio\sk4d.dll.new&quot; &quot;C:\ProgramData\aviutl2\Plugin\SYNC_MVStudio\sk4d.dll&quot;&amp;&amp;if exist &quot;C:\ProgramData\aviutl2\Plugin\SYNC_MVStudio\$(PROJECTNAME).dll&quot; del /Q &quot;C:\ProgramData\aviutl2\Plugin\SYNC_MVStudio\$(PROJECTNAME).dll&quot;&amp;&amp;if exist &quot;C:\ProgramData\aviutl2\Plugin\SYNC_MVStudio\$(PROJECTNAME).rsm&quot; del /Q &quot;C:\ProgramData\aviutl2\Plugin\SYNC_MVStudio\$(PROJECTNAME).rsm&quot;</PostBuildEvent>
+        <PostBuildEventIgnoreExitCode>False</PostBuildEventIgnoreExitCode>
+    </PropertyGroup>
+</Project>
