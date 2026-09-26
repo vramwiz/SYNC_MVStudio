@@ -24,6 +24,12 @@ begin
     if msfOutlineColor in Fields then Result.AddPair('outlineColor', TJSONNumber.Create(Int64(Style.OutlineColor)));
     if msfOutlineWidth in Fields then Result.AddPair('outline', TJSONNumber.Create(Double(Style.OutlineWidth)));
     if msfShadow in Fields then Result.AddPair('shadow', TJSONBool.Create(Style.Shadow));
+    if msfOutlineBlur in Fields then Result.AddPair('outlineBlur', TJSONNumber.Create(Double(Style.OutlineBlur)));
+    if msfShadowColor in Fields then Result.AddPair('shadowColor', TJSONNumber.Create(Int64(Style.ShadowColor)));
+    if msfShadowX in Fields then Result.AddPair('shadowX', TJSONNumber.Create(Double(Style.ShadowX)));
+    if msfShadowY in Fields then Result.AddPair('shadowY', TJSONNumber.Create(Double(Style.ShadowY)));
+    if msfShadowSpread in Fields then Result.AddPair('shadowSpread', TJSONNumber.Create(Double(Style.ShadowSpread)));
+    if msfShadowBlur in Fields then Result.AddPair('shadowBlur', TJSONNumber.Create(Double(Style.ShadowBlur)));
     if msfBold in Fields then Result.AddPair('bold', TJSONBool.Create(Style.Bold));
     if msfItalic in Fields then Result.AddPair('italic', TJSONBool.Create(Style.Italic));
     if msfFillMode in Fields then Result.AddPair('fillMode', TJSONNumber.Create(Int64(Style.FillMode)));
@@ -78,6 +84,36 @@ begin
   begin
     Style.Shadow := Obj.GetValue<Boolean>('shadow');
     Include(Fields, msfShadow);
+  end;
+  if Obj.GetValue('outlineBlur') <> nil then
+  begin
+    Style.OutlineBlur := Obj.GetValue<Double>('outlineBlur');
+    Include(Fields, msfOutlineBlur);
+  end;
+  if Obj.GetValue('shadowColor') <> nil then
+  begin
+    Style.ShadowColor := Obj.GetValue<Cardinal>('shadowColor');
+    Include(Fields, msfShadowColor);
+  end;
+  if Obj.GetValue('shadowX') <> nil then
+  begin
+    Style.ShadowX := Obj.GetValue<Double>('shadowX');
+    Include(Fields, msfShadowX);
+  end;
+  if Obj.GetValue('shadowY') <> nil then
+  begin
+    Style.ShadowY := Obj.GetValue<Double>('shadowY');
+    Include(Fields, msfShadowY);
+  end;
+  if Obj.GetValue('shadowSpread') <> nil then
+  begin
+    Style.ShadowSpread := Obj.GetValue<Double>('shadowSpread');
+    Include(Fields, msfShadowSpread);
+  end;
+  if Obj.GetValue('shadowBlur') <> nil then
+  begin
+    Style.ShadowBlur := Obj.GetValue<Double>('shadowBlur');
+    Include(Fields, msfShadowBlur);
   end;
   if Common or (Obj.GetValue('bold') <> nil) then
   begin

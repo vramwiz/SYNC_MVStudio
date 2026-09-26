@@ -6,10 +6,8 @@ interface
 uses System.Classes, Vcl.Controls, Vcl.ExtCtrls, Vcl.StdCtrls, Vcl.Buttons, MVDocument, MVEditSession, MVStyleTypes, MVEditorCanvas;
 
 type
-  TMVFontAction = (mfaBold, mfaItalic, mfaOutline, mfaShadow, mfaColor, mfaOutlineColor);
+  TMVFontAction = (mfaBold, mfaItalic, mfaOutline, mfaShadow);
   TMVFontButton = class(TSpeedButton)
-  public
-    Swatch: Cardinal; // 色選択アイコン下端のRGB色。
   protected
     // 親DCの原点を維持し、選択色と装飾を独立ビットマップに描く。
     procedure Paint; override;
@@ -42,7 +40,7 @@ uses Winapi.Windows, System.SysUtils, System.Types, System.UITypes, System.Math,
   Vcl.Forms, Vcl.Graphics, Vcl.Dialogs;
 
 procedure TMVFontButton.Paint;
-const Letters: array[TMVFontAction] of string = ('B', 'I', 'A', 'A', 'A', 'A');
+const Letters: array[TMVFontAction] of string = ('B', 'I', 'A', 'A');
 var B: TBitmap; R: TRect; Kind: TMVFontAction;
 begin
   B := TBitmap.Create;
@@ -72,13 +70,6 @@ begin
     B.Canvas.Pen.Color := $00E8E8E8;
     B.Canvas.Brush.Style := bsClear;
     if Kind = mfaOutline then B.Canvas.Rectangle(3, 3, Width - 3, Height - 3);
-    if Kind in [mfaColor, mfaOutlineColor] then
-    begin
-      B.Canvas.Pen.Color := TColor(Swatch);
-      B.Canvas.Pen.Width := Max(2, Height div 10);
-      B.Canvas.MoveTo(6, Height - 5); B.Canvas.LineTo(Width - 6, Height - 5);
-      if Kind = mfaOutlineColor then B.Canvas.Rectangle(3, 3, Width - 3, Height - 9);
-    end;
     Canvas.Draw(0, 0, B);
   finally B.Free; end;
 end;
@@ -86,7 +77,8 @@ end;
 constructor TMVFontToolbar.CreateToolbar(Owner: TComponent; Parent: TWinControl; Session: TMVEditSession;
   Changed: TNotifyEvent; EditorCanvas: TMVEditorCanvas);
 const
-  Hints: array[TMVFontAction] of string = ('太字', '斜体', '縁取り', '影', '文字色', '縁の色');
+  Hints: array[TMVFontAction] of string = ('太字', '斜体', '縁取り切替（太さ・ぼかしは選択文字の下のアイコンをドラッグ）',
+    '影の切替（位置・太さ・ぼかしは選択文字の下のアイコンをドラッグ）');
 var Kind: TMVFontAction;
 begin
   inherited Create(Owner);
@@ -146,10 +138,6 @@ begin
     FButtons[mfaOutline].Down := (S.OutlineWidth > 0) and (S.FillMode <> 1);
     FButtons[mfaShadow].Down := S.Shadow;
     if S.OutlineWidth > 0 then FOutlineWidth := S.OutlineWidth;
-    FButtons[mfaColor].Swatch := RGB((S.Color shr 16) and $FF, (S.Color shr 8) and $FF, S.Color and $FF);
-    FButtons[mfaOutlineColor].Swatch := RGB((S.OutlineColor shr 16) and $FF,
-      (S.OutlineColor shr 8) and $FF, S.OutlineColor and $FF);
-    FButtons[mfaColor].Invalidate; FButtons[mfaOutlineColor].Invalidate;
   finally FUpdating := False; end;
 end;
 
@@ -195,7 +183,7 @@ begin
 end;
 
 procedure TMVFontToolbar.ActionClick(Sender: TObject);
-var S: TMVStyle; Kind: TMVFontAction; Dialog: TColorDialog; C: Cardinal; Fields: TMVStyleFields;
+var S: TMVStyle; Kind: TMVFontAction; Fields: TMVStyleFields;
 begin
   S := CurrentStyle;
   Kind := TMVFontAction(TControl(Sender).Tag);
@@ -205,8 +193,6 @@ begin
     mfaItalic: Fields := [msfItalic];
     mfaOutline: Fields := [msfOutlineWidth];
     mfaShadow: Fields := [msfShadow];
-    mfaColor: Fields := [msfColor];
-    mfaOutlineColor: Fields := [msfOutlineColor];
   end;
   case Kind of
     mfaBold: S.Bold := FButtons[Kind].Down;
@@ -225,16 +211,6 @@ begin
         end;
       end;
     mfaShadow: S.Shadow := FButtons[Kind].Down;
-  else
-    Dialog := TColorDialog.Create(Self);
-    try
-      if Kind = mfaColor then C := S.Color else C := S.OutlineColor;
-      Dialog.Color := RGB((C shr 16) and $FF, (C shr 8) and $FF, C and $FF);
-      if not Dialog.Execute then Exit;
-      C := ColorToRGB(Dialog.Color);
-      C := $FF000000 or Cardinal(GetRValue(C)) shl 16 or Cardinal(GetGValue(C)) shl 8 or GetBValue(C);
-      if Kind = mfaColor then S.Color := C else S.OutlineColor := C;
-    finally Dialog.Free; end;
   end;
   Apply(S, Fields);
 end;

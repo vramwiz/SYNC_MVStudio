@@ -3,7 +3,7 @@
         <ProjectGuid>{10861864-FB5A-4EF9-A621-F305DC8789CD}</ProjectGuid>
         <ProjectVersion>20.4</ProjectVersion>
         <FrameworkType>None</FrameworkType>
-        <Config Condition="'$(Config)'==''">Debug</Config>
+        <Config Condition="'$(Config)'==''">Release</Config>
         <Platform Condition="'$(Platform)'==''">Win64</Platform>
         <ProjectName Condition="'$(ProjectName)'==''">SYNC_MVStudio_Filter</ProjectName>
         <TargetedPlatforms>2</TargetedPlatforms>
@@ -111,38 +111,39 @@
         <DCCReference Include="Source\Core\Animation\Model\MVPositionMotionTypes.pas"/>
         <DCCReference Include="Source\Core\Animation\MVPositionMotion.pas"/>
         <DCCReference Include="Source\Core\Storage\MVPositionMotionJson.pas"/>
-        <DCCReference Include="Source\Plugin\Filter\Settings\MVPositionMotionFilterSettings.pas"/>
+        <DCCReference Include="Source\Plugin\Filter\Settings\Animation\MVPositionMotionFilterSettings.pas"/>
         <DCCReference Include="Source\Core\Storage\MVAppearanceJson.pas"/>
-        <DCCReference Include="Source\Plugin\Filter\Settings\MVAppearanceFilterSettings.pas"/>
-        <DCCReference Include="Source\Rendering\Effects\MVAppearanceRenderer.pas"/>
+        <DCCReference Include="Source\Plugin\Filter\Settings\Animation\MVAppearanceFilterSettings.pas"/>
+        <DCCReference Include="Source\Rendering\Effects\Decoration\MVAppearanceRenderer.pas"/>
         <DCCReference Include="Source\Core\Animation\Model\MVTransitionTiming.pas"/>
         <DCCReference Include="Source\Core\Animation\Shapes\MVShapeTypes.pas"/>
         <DCCReference Include="Source\Core\Animation\Shapes\MVShapeAnimation.pas"/>
-        <DCCReference Include="Source\Rendering\Effects\MVShapeRenderer.pas"/>
+        <DCCReference Include="Source\Rendering\Effects\Decoration\MVShapeRenderer.pas"/>
         <DCCReference Include="Source\Rendering\Effects\MVAnimatedBounds.pas"/>
-        <DCCReference Include="Source\Plugin\Filter\Settings\MVShapeFilterSettings.pas"/>
+        <DCCReference Include="Source\Plugin\Filter\Settings\Animation\MVShapeFilterSettings.pas"/>
         <DCCReference Include="Source\Core\Animation\MVAnimationCatalog.pas"/>
+        <DCCReference Include="Source\Core\Animation\Transitions\MVTransitionParts.pas"/>
+        <DCCReference Include="Source\Core\Animation\Transitions\MVTransitionComposition.pas"/>
         <DCCReference Include="Source\Core\Animation\Transitions\MVTransitionBasic.pas"/>
         <DCCReference Include="Source\Core\Animation\Transitions\MVTransitionExtended.pas"/>
         <DCCReference Include="Source\Core\Animation\Holds\MVHoldBasic.pas"/>
         <DCCReference Include="Source\Core\Animation\Holds\MVHoldExtended.pas"/>
-        <DCCReference Include="Source\Rendering\Effects\MVGlyphEffects.pas"/>
-        <DCCReference Include="Source\Core\Animation\Transitions\MVTransitionMovement.pas"/>
-        <DCCReference Include="Source\Core\Animation\Transitions\MVTransitionScale.pas"/>
-        <DCCReference Include="Source\Core\Animation\Transitions\MVTransitionMasks.pas"/>
-        <DCCReference Include="Source\Core\Animation\Transitions\MVTransitionScatter.pas"/>
-        <DCCReference Include="Source\Core\Animation\Transitions\MVTransitionKinetic.pas"/>
-        <DCCReference Include="Source\Core\Animation\Transitions\MVTransitionPattern.pas"/>
-        <DCCReference Include="Source\Core\Animation\Transitions\MVTransitionPath.pas"/>
+        <DCCReference Include="Source\Rendering\Effects\Glyph\MVGlyphEffects.pas"/>
+        <DCCReference Include="Source\Core\Animation\Transitions\Motion\MVTransitionMovement.pas"/>
+        <DCCReference Include="Source\Core\Animation\Transitions\Motion\MVTransitionScale.pas"/>
+        <DCCReference Include="Source\Core\Animation\Transitions\Visibility\MVTransitionMasks.pas"/>
+        <DCCReference Include="Source\Core\Animation\Transitions\Motion\MVTransitionScatter.pas"/>
+        <DCCReference Include="Source\Core\Animation\Transitions\Motion\MVTransitionKinetic.pas"/>
+        <DCCReference Include="Source\Core\Animation\Transitions\Visibility\MVTransitionPattern.pas"/>
+        <DCCReference Include="Source\Core\Animation\Transitions\Motion\MVTransitionPath.pas"/>
         <DCCReference Include="Source\Core\Animation\Holds\MVHoldKinetic.pas"/>
         <DCCReference Include="Source\Core\Animation\Holds\MVHoldAccent.pas"/>
-        <DCCReference Include="Source\Rendering\Effects\MVGlyphPatterns.pas"/>
+        <DCCReference Include="Source\Rendering\Effects\Glyph\MVGlyphPatterns.pas"/>
         <DCCReference Include="Source\Core\Animation\MVAnimation.pas"/>
         <DCCReference Include="Source\Core\Model\MVBackgroundFrame.pas"/>
-        <DCCReference Include="Source\Plugin\Filter\Editor\MVEditorBackground.pas"/>
         <DCCReference Include="Source\Core\Model\MVStyleTypes.pas"/>
         <DCCReference Include="Source\Core\Storage\MVStyleJson.pas"/>
-        <DCCReference Include="Source\Rendering\Effects\MVGlyphDecoration.pas"/>
+        <DCCReference Include="Source\Rendering\Effects\Decoration\MVGlyphDecoration.pas"/>
         <DCCReference Include="Source\Editor\Interaction\MVArrangement.pas"/>
         <DCCReference Include="Source\Core\Model\MVDocument.pas"/>
         <DCCReference Include="Source\Core\Model\MVGrouping.pas"/>
@@ -152,7 +153,7 @@
         <DCCReference Include="Source\Core\Storage\MVDocumentJson.pas"/>
         <DCCReference Include="Source\Rendering\MVLayout.pas"/>
         <DCCReference Include="Source\Rendering\MVAnimationGroups.pas"/>
-        <DCCReference Include="Source\Rendering\Effects\MVGroupEffects.pas"/>
+        <DCCReference Include="Source\Rendering\Effects\Glyph\MVGroupEffects.pas"/>
         <DCCReference Include="Source\Rendering\MVRenderer.pas"/>
         <DCCReference Include="Source\Editor\Interaction\MVSelection.pas"/>
         <DCCReference Include="Source\Editor\Interaction\MVTransformGeometry.pas"/>
@@ -160,6 +161,13 @@
         <DCCReference Include="Source\Editor\Canvas\MVCanvasViewport.pas"/>
         <DCCReference Include="Source\Editor\Canvas\MVSelectionOverlay.pas"/>
         <DCCReference Include="Source\Editor\Toolbar\MVFontToolbar.pas"/>
+        <DCCReference Include="Source\Editor\Model\MVStyleGesture.pas"/>
+        <DCCReference Include="Source\Editor\Interaction\MVDecorationHandles.pas"/>
+        <DCCReference Include="Source\Editor\Toolbar\MVColorTargets.pas"/>
+        <DCCReference Include="Source\Editor\Toolbar\MVColorPanel.pas"/>
+        <DCCReference Include="Source\Lib\ColorPicker\ColorPickerColorMath.pas"/>
+        <DCCReference Include="Source\Lib\ColorPicker\ColorPickerHueBar.pas"/>
+        <DCCReference Include="Source\Lib\ColorPicker\ColorPickerSVArea.pas"/>
         <DCCReference Include="Source\Editor\Canvas\MVEditorCanvas.pas"/>
         <DCCReference Include="Source\Editor\Model\MVEditSession.pas"/>
         <DCCReference Include="Source\Editor\Toolbar\MVPlacementToolbar.pas"/>
@@ -167,7 +175,10 @@
         <DCCReference Include="Source\Editor\Shell\MVEditorForm.pas"/>
         <DCCReference Include="Source\Plugin\Filter\Context\MVContextRegistry.pas"/>
         <DCCReference Include="Source\Plugin\Filter\Context\MVFilterContext.pas"/>
+        <DCCReference Include="Source\Editor\Canvas\MVEditorCanvasView.pas"/>
+        <DCCReference Include="Source\Plugin\Filter\Settings\Animation\MVAnimationFilterSettings.pas"/>
         <DCCReference Include="Source\Plugin\Filter\Settings\MVFilterSettings.pas"/>
+        <DCCReference Include="Source\Plugin\Filter\Editor\MVEditorBackground.pas"/>
         <DCCReference Include="Source\Plugin\Filter\Editor\MVEditorLegacy.pas"/>
         <DCCReference Include="Source\Plugin\Filter\Editor\MVHostText.pas"/>
         <DCCReference Include="Source\Plugin\Filter\Editor\MVEditorHost.pas"/>

@@ -13,7 +13,7 @@ function TryDecodeMVDocument(const Value: string; var Document: TMVDocument; out
 implementation
 
 uses System.SysUtils, System.JSON, System.Generics.Collections, MVTextUnits, MVAnimationTypes,
-  MVStyleTypes, MVStyleJson, MVAppearanceJson, MVPositionMotionJson;
+  MVStyleTypes, MVStyleJson, MVAppearanceJson, MVPositionMotionJson, MVTransitionParts;
 
 procedure AddNumber(Obj: TJSONObject; const Key: string; Value: Double);
 begin
@@ -46,6 +46,10 @@ begin
     AddInteger(Anim, 'in', Document.Entrance);
     AddInteger(Anim, 'hold', Document.Hold);
     AddInteger(Anim, 'out', Document.ExitEffect);
+    AddInteger(Anim, 'inMotion', Document.EntranceMotion);
+    AddInteger(Anim, 'outMotion', Document.ExitMotion);
+    AddInteger(Anim, 'inVisibility', Document.EntranceVisibility);
+    AddInteger(Anim, 'outVisibility', Document.ExitVisibility);
     AddInteger(Anim, 'inDirection', Document.EntranceDirection);
     AddInteger(Anim, 'outDirection', Document.ExitDirection);
     if Document.EntranceTiming <> 0 then AddInteger(Anim, 'inTiming', Document.EntranceTiming);
@@ -123,7 +127,7 @@ begin
       if not (Parsed is TJSONObject) then
         raise EArgumentException.Create('配置データを読み取れません。');
       Root := TJSONObject(Parsed);
-      if not (Root.GetValue<Integer>('version') in [1, 2, 3, 4, 5, 6, MV_DOCUMENT_VERSION]) then
+      if not (Root.GetValue<Integer>('version') in [1, 2, 3, 4, 5, 6, 7, 8, MV_DOCUMENT_VERSION]) then
         raise EArgumentException.Create('未対応の配置データ形式です。');
       Candidate := DefaultMVDocument;
       Candidate.Appearance := DecodeMVAppearance(Root.GetValue('appearance'));
@@ -136,6 +140,11 @@ begin
       Candidate.Entrance := Anim.GetValue<Integer>('in');
       Candidate.Hold := Anim.GetValue<Integer>('hold');
       Candidate.ExitEffect := Anim.GetValue<Integer>('out');
+      // 未保存の要素は旧複合IDから解決する。「なし」の明示指定は引継ぎと区別して維持する。
+      Candidate.EntranceMotion := Anim.GetValue<Integer>('inMotion', MV_TRANSITION_INHERIT);
+      Candidate.ExitMotion := Anim.GetValue<Integer>('outMotion', MV_TRANSITION_INHERIT);
+      Candidate.EntranceVisibility := Anim.GetValue<Integer>('inVisibility', MV_TRANSITION_INHERIT);
+      Candidate.ExitVisibility := Anim.GetValue<Integer>('outVisibility', MV_TRANSITION_INHERIT);
       Candidate.EntranceDirection := Anim.GetValue<Integer>('inDirection', LegacyMVDirection(Candidate.Entrance, False));
       Candidate.ExitDirection := Anim.GetValue<Integer>('outDirection', LegacyMVDirection(Candidate.ExitEffect, True));
       Candidate.EntranceTiming := Anim.GetValue<Integer>('inTiming', 0);

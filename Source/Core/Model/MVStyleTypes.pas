@@ -6,7 +6,7 @@ interface
 uses System.UITypes;
 
 type
-  TMVStyleField = (msfFontName, msfColor, msfOutlineColor, msfOutlineWidth, msfShadow, msfBold, msfItalic, msfFillMode, msfOpacity, msfGlowColor, msfGlowRadius, msfGlowStrength, msfChromaticOffset, msfChromaticAngle, msfChromaticColor1, msfChromaticColor2, msfFrameColor, msfFrameWidth, msfFramePadding);
+  TMVStyleField = (msfFontName, msfColor, msfOutlineColor, msfOutlineWidth, msfShadow, msfBold, msfItalic, msfFillMode, msfOpacity, msfGlowColor, msfGlowRadius, msfGlowStrength, msfChromaticOffset, msfChromaticAngle, msfChromaticColor1, msfChromaticColor2, msfFrameColor, msfFrameWidth, msfFramePadding, msfOutlineBlur, msfShadowColor, msfShadowX, msfShadowY, msfShadowSpread, msfShadowBlur);
   TMVStyleFields = set of TMVStyleField;
   TMVStyle = record
     FontName: string; // 書体名。
@@ -14,6 +14,11 @@ type
     OutlineColor: TAlphaColor; // 縁のARGB色。
     OutlineWidth: Single; // 縁のピクセル幅。
     Shadow: Boolean; // 影を有効にする。
+    OutlineBlur: Single; // 縁のぼかし半径。0なら従来の硬い縁。
+    ShadowColor: TAlphaColor; // 影のARGB色。アルファは影だけの不透明度。
+    ShadowX, ShadowY: Single; // 字形ローカル座標での影の位置。
+    ShadowSpread: Single; // 影を外側へ太らせる半径。
+    ShadowBlur: Single; // 影のぼかし半径。
     Bold: Boolean; // 太字。
     Italic: Boolean; // 斜体。
     FillMode: Integer; // 0=塗りと縁、1=塗りのみ、2=縁のみ。
@@ -54,6 +59,12 @@ begin
   Result.OutlineColor := $FF000000;
   Result.OutlineWidth := 2;
   Result.Shadow := False;
+  Result.OutlineBlur := 0;
+  Result.ShadowColor := $A0000000;
+  Result.ShadowX := 3;
+  Result.ShadowY := 3;
+  Result.ShadowSpread := 0;
+  Result.ShadowBlur := 4;
   Result.Bold := False;
   Result.Italic := False;
   Result.FillMode := 0;
@@ -78,6 +89,12 @@ begin
   if msfOutlineColor in Fields then Target.OutlineColor := Source.OutlineColor;
   if msfOutlineWidth in Fields then Target.OutlineWidth := Source.OutlineWidth;
   if msfShadow in Fields then Target.Shadow := Source.Shadow;
+  if msfOutlineBlur in Fields then Target.OutlineBlur := Source.OutlineBlur;
+  if msfShadowColor in Fields then Target.ShadowColor := Source.ShadowColor;
+  if msfShadowX in Fields then Target.ShadowX := Source.ShadowX;
+  if msfShadowY in Fields then Target.ShadowY := Source.ShadowY;
+  if msfShadowSpread in Fields then Target.ShadowSpread := Source.ShadowSpread;
+  if msfShadowBlur in Fields then Target.ShadowBlur := Source.ShadowBlur;
   if msfBold in Fields then Target.Bold := Source.Bold;
   if msfItalic in Fields then Target.Italic := Source.Italic;
   if msfFillMode in Fields then Target.FillMode := Source.FillMode;
@@ -102,6 +119,12 @@ begin
   if A.OutlineColor <> B.OutlineColor then Include(Result, msfOutlineColor);
   if A.OutlineWidth <> B.OutlineWidth then Include(Result, msfOutlineWidth);
   if A.Shadow <> B.Shadow then Include(Result, msfShadow);
+  if A.OutlineBlur <> B.OutlineBlur then Include(Result, msfOutlineBlur);
+  if A.ShadowColor <> B.ShadowColor then Include(Result, msfShadowColor);
+  if A.ShadowX <> B.ShadowX then Include(Result, msfShadowX);
+  if A.ShadowY <> B.ShadowY then Include(Result, msfShadowY);
+  if A.ShadowSpread <> B.ShadowSpread then Include(Result, msfShadowSpread);
+  if A.ShadowBlur <> B.ShadowBlur then Include(Result, msfShadowBlur);
   if A.Bold <> B.Bold then Include(Result, msfBold);
   if A.Italic <> B.Italic then Include(Result, msfItalic);
   if A.FillMode <> B.FillMode then Include(Result, msfFillMode);
@@ -130,6 +153,11 @@ begin
     raise EArgumentException.Create('フォント名が不正です。');
   Check(Style.FontSize, 4, 512);
   Check(Style.OutlineWidth, 0, 32);
+  Check(Style.OutlineBlur, 0, 64);
+  Check(Style.ShadowX, -512, 512);
+  Check(Style.ShadowY, -512, 512);
+  Check(Style.ShadowSpread, 0, 64);
+  Check(Style.ShadowBlur, 0, 64);
   Check(Style.Spacing, -256, 512);
   Check(Style.LineSpacing, -256, 512);
   Check(Style.FillMode, 0, 2);

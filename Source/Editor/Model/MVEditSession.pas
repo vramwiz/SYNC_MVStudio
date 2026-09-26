@@ -17,6 +17,8 @@ type
     destructor Destroy; override;
     // 1操作の開始時に呼ぶ。ドラッグの各移動では呼ばない。
     procedure BeginChange;
+    // プレビュー済みの連続編集を、退避した開始文書から1回のUndoとして確定する。
+    procedure RecordChange(const Before: TMVDocument);
     // 文書を1操作戻す。履歴がない場合は変更しない。
     procedure Undo;
     // 戻した文書を1操作進める。
@@ -42,8 +44,13 @@ end;
 
 procedure TMVEditSession.BeginChange;
 begin
+  RecordChange(Document);
+end;
+
+procedure TMVEditSession.RecordChange(const Before: TMVDocument);
+begin
   if FUndo.Count >= 50 then FUndo.Delete(0);
-  FUndo.Add(CloneMVDocument(Document));
+  FUndo.Add(CloneMVDocument(Before));
   FRedo.Clear;
 end;
 

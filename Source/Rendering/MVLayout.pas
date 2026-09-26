@@ -79,13 +79,14 @@ begin
         if Style.Bold then Include(Request.FontStyle, TTextRenderFontStyleItem.Bold);
         if Style.Italic then Include(Request.FontStyle, TTextRenderFontStyleItem.Italic);
         if (Style.OutlineWidth > 0) and (Style.FillMode <> 1) then
-          Request.Outlines := [TTextRenderOutline.Create(Style.OutlineWidth, Style.OutlineColor)];
+          Request.Outlines := [TTextRenderOutline.Create(Style.OutlineWidth, Style.OutlineBlur, Style.OutlineColor)];
         if Style.Shadow then
         begin
           Shadow := Default(TTextRenderShadow);
-          Shadow.Color := $A0000000;
-          Shadow.BlurRadius := 4;
-          Shadow.Offset := PointF(3, 3);
+          Shadow.Color := Style.ShadowColor;
+          Shadow.BlurRadius := Style.ShadowBlur;
+          Shadow.SpreadRadius := Style.ShadowSpread;
+          Shadow.Offset := PointF(Style.ShadowX, Style.ShadowY);
           Request.Shadows := [Shadow];
         end;
         Request.Text := Document.Units[I].Text;

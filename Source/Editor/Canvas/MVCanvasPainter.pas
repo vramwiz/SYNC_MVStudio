@@ -4,13 +4,14 @@
 interface
 
 uses Winapi.Windows, System.SysUtils, System.Types, System.Skia, MVDocument, MVLayout,
-  MVCanvasViewport, MVTransformGeometry;
+  MVCanvasViewport, MVTransformGeometry, MVDecorationHandles;
 
 // 操作状態から独立して背景と歌詞を描く。Bufferは次の描画でも再利用する。
 procedure PaintMVEditorCanvas(DC: HDC; const Size, Output: TSize; const Document: TMVDocument;
   Layout: TMVLayout; const Background: ISkImage; const View: TMVViewport;
   const Handles: TMVHandlePoints; const Selected: TArray<Integer>; HandleSize: Single; Marquee: Boolean;
-  const RangeStart, RangeEnd: TPointF; var Buffer: TBytes);
+  const RangeStart, RangeEnd: TPointF; const Decoration: TMVDecorationPoints;
+  ActiveDecoration: TMVDecorationHandle; var Buffer: TBytes);
 implementation
 
 uses MVRenderer, MVSelectionOverlay;
@@ -38,7 +39,8 @@ end;
 procedure PaintMVEditorCanvas(DC: HDC; const Size, Output: TSize; const Document: TMVDocument;
   Layout: TMVLayout; const Background: ISkImage; const View: TMVViewport;
   const Handles: TMVHandlePoints; const Selected: TArray<Integer>; HandleSize: Single; Marquee: Boolean;
-  const RangeStart, RangeEnd: TPointF; var Buffer: TBytes);
+  const RangeStart, RangeEnd: TPointF; const Decoration: TMVDecorationPoints;
+  ActiveDecoration: TMVDecorationHandle; var Buffer: TBytes);
 var Surface: ISkSurface; Brush: ISkPaint; I: Integer; H: TMVHandle; Points: TMVHandlePoints; Item: TMVPlacement;
 begin
   Surface := BufferSurface(Size, Buffer);
@@ -64,6 +66,7 @@ begin
       DrawMVSelection(Surface.Canvas, Points, 0);
     end;
   if HandleSize > 0 then DrawMVSelection(Surface.Canvas, Handles, HandleSize);
+  if HandleSize > 0 then DrawMVDecorationHandles(Surface.Canvas, Decoration, HandleSize * 1.25, ActiveDecoration);
   if Marquee then DrawMVMarquee(Surface.Canvas, RangeStart, RangeEnd);
   Surface := nil;
   CopyToDC(DC, Size, Buffer);

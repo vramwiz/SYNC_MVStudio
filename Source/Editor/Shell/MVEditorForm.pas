@@ -4,7 +4,7 @@
 interface
 
 uses System.Classes, System.SysUtils, Vcl.Forms, Vcl.Controls, Vcl.ExtCtrls,
-  MVFontToolbar, MVDocument, MVEditSession, MVEditorCanvas, MVBackgroundFrame;
+  MVFontToolbar, MVDocument, MVEditSession, MVEditorCanvas, MVBackgroundFrame, MVColorPanel;
 
 type
   TMVSaveDocument = reference to function(const Document: TMVDocument): string;
@@ -14,12 +14,14 @@ type
     FSession: TMVEditSession; // 画面内の配置と操作履歴。
     FCanvas: TMVEditorCanvas; // 入力背景と文字の配置キャンバス。
     FFontToolbar: TMVFontToolbar; // 書体一覧と装飾。
+    FColorPanel: TMVColorPanel; // 色関係をまとめる右側の埋め込みピッカー。
     FPlacementToolbar: TPanel; // 配置と永続的なアニメーショングループの操作。
     FSave: TMVSaveDocument; // 閉じるときだけ対象へ保存する関数。
     FRuntimeAcquired: Boolean; // 画面を閉じるまでSkiaを保持する。
     procedure StyleChanged(Sender: TObject);
     procedure SelectionChanged(Sender: TObject);
     procedure ChangeAnimationGroup(Clear: Boolean);
+    procedure FitInitialWindow;
     procedure Command(Sender: TObject);
     procedure Shortcut(Sender: TObject; var Key: Word; Shift: TShiftState);
     procedure Closing(Sender: TObject; var CanClose: Boolean);
@@ -35,11 +37,12 @@ type
 
 implementation
 
-uses Winapi.Windows, System.UITypes, Vcl.Dialogs, Vcl.StdCtrls, MVPlacementToolbar,
+uses Winapi.Windows, System.Types, System.Math, System.UITypes, Vcl.Dialogs, Vcl.StdCtrls, MVPlacementToolbar,
   TextRendererSkiaRuntime, TextRendererSkiaBootstrap, MVArrangement, MVGrouping;
 
 constructor TMVEditorForm.CreateEditor(const Document: TMVDocument; Width, Height: Integer;
   Duration, EntranceTime, ExitTime: Double; const Save: TMVSaveDocument);
+var Body: TPanel;
 begin
   inherited CreateNew(nil);
   TTextRendererSkiaRuntime.Acquire(BundledSkiaRuntimeFileName);
@@ -59,8 +62,12 @@ begin
   // 今回確定する拡張文書から書式を編集画面の管理へ移す。
   FSession.Document.EditorSettings := True;
   FPlacementToolbar := CreateMVPlacementToolbar(Self, Self, Command);
+  Body := TPanel.Create(Self);
+  Body.Parent := Self;
+  Body.Align := alClient;
+  Body.BevelOuter := bvNone;
   FCanvas := TMVEditorCanvas.Create(Self);
-  FCanvas.Parent := Self;
+  FCanvas.Parent := Body;
   FCanvas.Align := alClient;
   FCanvas.OutputWidth := Width;
   FCanvas.OutputHeight := Height;
@@ -68,7 +75,9 @@ begin
   FCanvas.EntranceTime := EntranceTime;
   FCanvas.ExitTime := ExitTime;
   FCanvas.Attach(FSession);
+  FColorPanel := TMVColorPanel.CreatePanel(Self, Body, FCanvas);
   FFontToolbar := TMVFontToolbar.CreateToolbar(Self, Self, FSession, StyleChanged, FCanvas);
+  FitInitialWindow;
   FCanvas.OnSelectionChanged := SelectionChanged;
   SelectionChanged(Self);
   SetBackground(Default(TMVBackgroundFrame));
@@ -77,8 +86,25 @@ begin
   OnCloseQuery := Closing;
 end;
 
+procedure TMVEditorForm.FitInitialWindow;
+var WorkArea: TRect; I, ToolbarWidth: Integer;
+begin
+  WorkArea := Monitor.WorkareaRect;
+  ToolbarWidth := 0;
+  for I := 0 to FPlacementToolbar.ControlCount - 1 do
+    ToolbarWidth := Max(ToolbarWidth, FPlacementToolbar.Controls[I].Left + FPlacementToolbar.Controls[I].Width);
+  // 高DPIでも右端の固定操作が隠れない最小幅にし、初期ウィンドウは画面内へ収める。
+  Constraints.MinWidth := Min(WorkArea.Width, Max(700,
+    ToolbarWidth + MulDiv(8, CurrentPPI, 96) + Width - ClientWidth));
+  Constraints.MinHeight := Min(WorkArea.Height, 480);
+  Width := Min(Width, WorkArea.Width);
+  Height := Min(Height, WorkArea.Height);
+end;
+
 destructor TMVEditorForm.Destroy;
 begin
+  if FCanvas <> nil then FCanvas.OnSelectionChanged := nil;
+  FColorPanel.Free;
   FFontToolbar.Free;
   FCanvas.Free;
   FSession.Free;
@@ -95,6 +121,7 @@ procedure TMVEditorForm.SelectionChanged(Sender: TObject);
 var I, CommonGroup: Integer; HasGroup, SameGroup: Boolean; Button: TMVPlacementButton;
 begin
   FFontToolbar.RefreshStyle;
+  FColorPanel.RefreshStyle;
   CommonGroup := 0;
   if FCanvas.Selected >= 0 then CommonGroup := FSession.Document.Units[FCanvas.Selected].AnimationGroup;
   HasGroup := False;
@@ -134,6 +161,7 @@ end;
 procedure TMVEditorForm.StyleChanged(Sender: TObject);
 begin
   FCanvas.CancelInteraction;
+  FColorPanel.RefreshStyle;
   FCanvas.Invalidate;
 end;
 
@@ -183,6 +211,8 @@ end;
 
 procedure TMVEditorForm.Shortcut(Sender: TObject; var Key: Word; Shift: TShiftState);
 begin
+  if (Key = VK_ESCAPE) and FColorPanel.Editing then
+  begin FColorPanel.FinishColor(True); Key := 0; Exit; end;
   if (ActiveControl is TCustomEdit) or (ActiveControl is TCustomComboBox) then Exit;
   if not (ssCtrl in Shift) then Exit;
   try
@@ -210,6 +240,7 @@ var Error: string;
 begin
   CanClose := False;
   try
+    FColorPanel.FinishColor(False);
     FCanvas.CancelInteraction;
     ValidateMVDocument(FSession.Document);
     Error := FSave(FSession.Document);

@@ -1,17 +1,15 @@
 ﻿unit MVEditorCanvas;
 
-// 出力座標の文字配置を画面倍率から分離し、共通Skia描画とドラッグ操作を提供する。
+// 配置・範囲選択・装飾ドラッグの入力状態と捕捉を管理し、操作中の補助表示を描画する。
+// 文書、組版、表示座標、連続書式編集の共通管理はMVEditorCanvasViewへ委ねる。
 interface
 
-uses Winapi.Messages, System.Classes, System.SysUtils, System.Types, System.Skia, Vcl.Controls, MVEditSession, MVLayout,
-  MVBackgroundFrame, MVDocument, MVCanvasViewport, MVTransformGeometry, MVSelection;
+uses Winapi.Messages, System.Classes, System.SysUtils, System.Types, Vcl.Controls,
+  MVDocument, MVTransformGeometry, MVDecorationHandles, MVEditorCanvasView;
 
 type
-  TMVEditorCanvas = class(TCustomControl)
+  TMVEditorCanvas = class(TMVEditorCanvasView)
   private
-    FSession: TMVEditSession; // フォーム所有の作業用文書。
-    FLayout: TMVLayout; // 編集による更新まで再利用する文字画像。
-    FSelection: TMVSelection; // 選択集合とUndoを伴う共通変形。
     FSelectionBounds: TRectF; // 操作開始時のローカル外接枠。
     FMarquee: Boolean; // 空白からの左ドラッグによる範囲選択。
     FRangeStart, FRangeEnd: TPointF; // 範囲選択の出力座標。
@@ -19,20 +17,19 @@ type
     FDragging: Boolean; // 現在のマウス操作が配置移動か。
     FStart: TPointF; // ドラッグ開始時の出力座標。
     FOriginal: TMVPlacement; // Escape取消と変形評価の基準。
-    FView: TMVViewport; // 保存しない画面倍率と移動量。
-    FBuffer: TBytes; // Paint中だけのBGRA画像。
-    FBackground: ISkImage; // 合成前の静止背景。
     FHandle: TMVHandle; // 押下時に確定した操作点。
     FPanning: Boolean; // 中ボタンまたはSpaceによる画面移動。
     FPanStart, FPanOrigin: TPointF; // パン開始時の画面座標と原点。
     FSpace: Boolean; // Spaceを保持している間だけ手のひら操作。
-    FSelectionChanged: TNotifyEvent; // 選択後に書式UIを同期する。
-    function GetSelected: Integer;
-    function GetSelectionCount: Integer;
-    procedure NotifySelection;
+    FDecoration: TMVDecorationHandle; // 操作中の装飾アイコン。
+    FDecorationStart: TPointF; // 装飾ドラッグの画面上の開始点。
+    FDecorationPoints: TMVDecorationPoints; // ドラッグ中は位置を固定して追いかけ操作を防ぐ。
+    // 装飾ドラッグ中は開始時の画面座標を返し、アイコンの追いかけ操作を防ぐ。
+    function DecorationPoints: TMVDecorationPoints;
+    // 変形・装飾・範囲選択を確定または取消してから、マウス捕捉を解除する。
     procedure FinishDrag(Cancel: Boolean);
+    // 出力座標の位置を画面中央または未選択文字の中心へ吸着させる。
     procedure SnapPosition(var Item: TMVPlacement);
-    procedure ViewTransform;
   protected
     // Skiaの共通描画結果をVCLへ転送する。
     procedure Paint; override;
@@ -46,46 +43,23 @@ type
     function DoMouseWheel(Shift: TShiftState; WheelDelta: Integer; MousePos: TPoint): Boolean; override;
     // 矢印で位置調整、Escapeでドラッグ取消、Spaceでパンを行う。
     procedure KeyDown(var Key: Word; Shift: TShiftState); override;
+    // Spaceの解放を反映し、次の左クリックを通常操作へ戻す。
     procedure KeyUp(var Key: Word; Shift: TShiftState); override;
     // 画面外で捕捉を失った操作を取り消す。
     procedure WndProc(var Message: TMessage); override;
   public
     SnapEnabled: Boolean; // 位置と回転のスナップ。Alt保持中は一時解除。
-    OutputWidth, OutputHeight: Integer; // 編集対象シーンの解像度。
-    Time, Duration, EntranceTime, ExitTime: Double; // Time=-1なら静止編集。
-    // セッションと表示状態を初期化する。
+    // 手動捕捉による入力操作を初期化する。AOwnerへ通常のVCL所有権を渡す。
     constructor Create(AOwner: TComponent); override;
-    // 背景と文字画像を解放する。セッションは解放しない。
+    // 未確定操作を取り消してから、基底クラスが組版と背景を解放する。
     destructor Destroy; override;
-    // 作業用文書を関連付けて最初の組版を行う。
-    procedure Attach(Session: TMVEditSession);
-    // 入力背景をSkia画像へ複写し、キャンバスを入力寸法に合わせる。空なら無地へ戻す。
-    procedure SetBackground(const Frame: TMVBackgroundFrame);
-    // 文書変更後に組版を更新する。
-    procedure RefreshDocument;
-    // 候補の組版成功後だけ文書を置き換え、1操作のUndoを記録する。
-    procedure CommitDocument(const Candidate: TMVDocument);
-    // 表示だけをフィットまたは100%へ戻す。
-    procedure ResetView(ActualSize: Boolean = False);
-    // 未確定ドラッグを元に戻し、選択も解除できる。
-    procedure CancelInteraction(Deselect: Boolean = False);
-    // 自動配置の文字も含め、現在の選択点を画面座標で返す。
-    function SelectionHandles: TMVHandlePoints;
-    // 保存座標を画面へ変換する。表示検証と補助UIにも使う。
-    function DocumentToScreen(const Point: TPointF): TPointF;
-    // 選択のコピーを返す。書式・整列コマンドは内部配列を直接変更しない。
-    function SelectedIndices: TArray<Integer>;
-    // 現在の選択を、登録済みの動作グループ全体へ広げる。文書やUndoは変更しない。
-    procedure SelectAnimationGroups;
-    property Selected: Integer read GetSelected;
-    property SelectionCount: Integer read GetSelectionCount;
-    property Layout: TMVLayout read FLayout;
-    property OnSelectionChanged: TNotifyEvent read FSelectionChanged write FSelectionChanged;
+    // 未確定ドラッグを元に戻し、指定時は選択も解除する。
+    procedure CancelInteraction(Deselect: Boolean = False); override;
   end;
 
 implementation
 
-uses Winapi.Windows, System.Math, System.UITypes, MVCanvasPainter, MVGrouping;
+uses Winapi.Windows, System.Math, System.UITypes, MVCanvasPainter;
 
 constructor TMVEditorCanvas.Create(AOwner: TComponent);
 begin
@@ -94,120 +68,22 @@ begin
   // VCLの自動捕捉はMouseUpより先に解除され、正常終了もWM_CAPTURECHANGEDで取消になる。
   // 捕捉はMouseDownとFinishDragで管理し、選択・変形の確定後に解除する。
   ControlStyle := (ControlStyle + [csOpaque]) - [csCaptureMouse];
-  FSelection := TMVSelection.Create;
+  ShowHint := True;
   SnapEnabled := True;
-  Time := -1;
-  Duration := 5;
-  OutputWidth := 1920;
-  OutputHeight := 1080;
 end;
 
 destructor TMVEditorCanvas.Destroy;
 begin
   if FSelection <> nil then CancelInteraction;
-  FBackground := nil;
-  FSelection.Free;
-  FLayout.Free;
   inherited;
 end;
 
-procedure TMVEditorCanvas.SetBackground(const Frame: TMVBackgroundFrame);
+function TMVEditorCanvas.DecorationPoints: TMVDecorationPoints;
 begin
-  FBackground := nil;
-  if Frame.IsValid then
-  begin
-    FBackground := TSkImage.MakeRasterCopy(TSkImageInfo.Create(Frame.Width, Frame.Height,
-      TSkColorType.RGBA8888, TSkAlphaType.Unpremul), @Frame.Pixels[0], Frame.Width * 4);
-    OutputWidth := Frame.Width;
-    OutputHeight := Frame.Height;
-  end;
-  Invalidate;
+  if FDecoration <> mdhNone then Exit(FDecorationPoints);
+  Result := MVDecorationPoints(SelectionHandles, ClientWidth, ClientHeight, CurrentPPI / 96);
 end;
 
-procedure TMVEditorCanvas.Attach(Session: TMVEditSession);
-begin
-  FSession := Session;
-  RefreshDocument;
-end;
-
-procedure TMVEditorCanvas.RefreshDocument;
-var NewLayout: TMVLayout;
-begin
-  NewLayout := TMVLayout.Create(FSession.Document);
-  FLayout.Free;
-  FLayout := NewLayout;
-  FSelection.Attach(FSession, FLayout);
-  Invalidate;
-end;
-
-procedure TMVEditorCanvas.ViewTransform;
-begin
-  FView.Update(ClientWidth, ClientHeight, OutputWidth, OutputHeight);
-end;
-
-function TMVEditorCanvas.GetSelected: Integer;
-begin Result := FSelection.First; end;
-
-function TMVEditorCanvas.GetSelectionCount: Integer;
-begin Result := FSelection.Count; end;
-
-function TMVEditorCanvas.SelectedIndices: TArray<Integer>;
-begin Result := FSelection.Snapshot; end;
-
-procedure TMVEditorCanvas.SelectAnimationGroups;
-begin
-  CancelInteraction;
-  FSelection.Restore(ExpandMVAnimationGroups(FSession.Document, SelectedIndices));
-  FSelection.Attach(FSession, FLayout);
-  NotifySelection;
-  Invalidate;
-end;
-
-procedure TMVEditorCanvas.NotifySelection;
-begin
-  if Assigned(FSelectionChanged) then FSelectionChanged(Self);
-end;
-
-procedure TMVEditorCanvas.CommitDocument(const Candidate: TMVDocument);
-var NewLayout: TMVLayout; Prepared: TMVDocument;
-begin
-  Prepared := CloneMVDocument(Candidate);
-  NewLayout := TMVLayout.Create(Prepared);
-  try
-    FSession.BeginChange;
-    FSession.Document := Prepared;
-    FLayout.Free;
-    FLayout := NewLayout;
-    NewLayout := nil;
-    FSelection.Attach(FSession, FLayout);
-    Invalidate;
-  finally NewLayout.Free; end;
-end;
-
-function TMVEditorCanvas.DocumentToScreen(const Point: TPointF): TPointF;
-begin
-  ViewTransform;
-  Result := FView.ToScreen(Point, OutputWidth, OutputHeight);
-end;
-
-function TMVEditorCanvas.SelectionHandles: TMVHandlePoints;
-var H: TMVHandle; Item: TMVPlacement; Bounds: TRectF;
-begin
-  Result := Default(TMVHandlePoints);
-  if Selected < 0 then Exit;
-  ViewTransform;
-  FSelection.Frame(Item, Bounds);
-  Result := MVHandles(Item, Bounds, 28 * CurrentPPI / 96 / FView.Zoom);
-  for H := mhNW to mhRotate do Result[H] := FView.ToScreen(Result[H], OutputWidth, OutputHeight);
-end;
-
-procedure TMVEditorCanvas.ResetView(ActualSize: Boolean);
-begin
-  FView.Manual := False;
-  ViewTransform;
-  if ActualSize then FView.ZoomAt(PointF(ClientWidth / 2, ClientHeight / 2), 1 / FView.Zoom);
-  Invalidate;
-end;
 procedure TMVEditorCanvas.Paint;
 var HandleSize: Single;
 begin
@@ -218,10 +94,11 @@ begin
   PaintMVEditorCanvas(Canvas.Handle, TSize.Create(ClientWidth, ClientHeight),
     TSize.Create(OutputWidth, OutputHeight), FSession.Document, FLayout, FBackground, FView,
     SelectionHandles, FSelection.Snapshot, HandleSize, FMarquee, DocumentToScreen(FRangeStart),
-    DocumentToScreen(FRangeEnd), FBuffer);
+    DocumentToScreen(FRangeEnd), DecorationPoints, FDecoration, FBuffer);
 end;
+
 procedure TMVEditorCanvas.MouseDown(Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
-var I, Hit: Integer; P: TPointF; Item: TMVPlacement; Bounds: TRectF;
+var I, Hit: Integer; P: TPointF; Item: TMVPlacement; Bounds: TRectF; Decoration: TMVDecorationHandle;
 begin
   inherited;
   if (FLayout = nil) or (Time >= 0) then Exit;
@@ -234,6 +111,20 @@ begin
     MouseCapture := True; Cursor := crHandPoint; Exit;
   end;
   if Button <> mbLeft then Exit;
+  if Selected >= 0 then
+  begin
+    FDecorationPoints := DecorationPoints;
+    Decoration := MVHitDecoration(FDecorationPoints, PointF(X, Y), 12 * CurrentPPI / 96);
+    if Decoration <> mdhNone then
+    begin
+      BeginStyleEdit;
+      FDecoration := Decoration;
+      FDecorationStart := PointF(X, Y);
+      MouseCapture := True;
+      Invalidate;
+      Exit;
+    end;
+  end;
   FHandle := mhNone;
   if Selected >= 0 then
     FHandle := MVHitHandle(SelectionHandles, PointF(X, Y), 7 * CurrentPPI / 96);
@@ -279,6 +170,7 @@ begin
   end;
   Invalidate;
 end;
+
 procedure TMVEditorCanvas.SnapPosition(var Item: TMVPlacement);
 var I: Integer; BestX, BestY, DX, DY, Limit: Single; Target: TPointF;
 begin
@@ -306,9 +198,22 @@ begin
 end;
 
 procedure TMVEditorCanvas.MouseMove(Shift: TShiftState; X, Y: Integer);
-var P: TPointF; Item: TMVPlacement; H: TMVHandle;
+var P: TPointF; Item: TMVPlacement; H: TMVHandle; D: TMVDecorationHandle;
 begin
   inherited;
+  if FDecoration <> mdhNone then
+  begin
+    P := (PointF(X, Y) - FDecorationStart) * (1 / FView.Zoom);
+    if ssShift in Shift then P := P * 0.1;
+    try
+      FStyleGesture.Preview(MVDragDecoration(FStyleGesture.Before, FStyleIndices, FDecoration, P), FLayout);
+      FSelection.Attach(FSession, FLayout);
+      Invalidate;
+    except
+      on E: Exception do Hint := E.Message; // 上限に達した場合は直前の有効なプレビューを維持する。
+    end;
+    Exit;
+  end;
   if FPanning then
   begin
     FView.Origin := FPanOrigin + PointF(X, Y) - FPanStart;
@@ -325,6 +230,14 @@ begin
   end;
   if not MouseCapture or (Selected < 0) then
   begin
+    D := mdhNone;
+    if Selected >= 0 then D := MVHitDecoration(DecorationPoints, PointF(X, Y), 12 * CurrentPPI / 96);
+    Hint := MVDecorationHint(D);
+    if D <> mdhNone then
+    begin
+      if D = mdhShadowPosition then Cursor := crSizeAll else Cursor := crSizeWE;
+      Exit;
+    end;
     H := mhNone;
     if Selected >= 0 then H := MVHitHandle(SelectionHandles, PointF(X, Y), 7 * CurrentPPI / 96);
     case H of
@@ -348,12 +261,15 @@ end;
 
 procedure TMVEditorCanvas.FinishDrag(Cancel: Boolean);
 begin
+  FDecoration := mdhNone;
+  FinishStyleEdit(Cancel);
   FSelection.Finish(Cancel);
   if FMarquee and Cancel then FSelection.Restore(FRangeBefore);
   FMarquee := False; FRangeBefore := nil; FRangeBase := nil;
   FDragging := False; FPanning := False; FHandle := mhNone;
   MouseCapture := False; Cursor := crDefault; Invalidate;
 end;
+
 procedure TMVEditorCanvas.CancelInteraction(Deselect: Boolean);
 begin
   FinishDrag(True);
@@ -398,6 +314,7 @@ begin
   end;
   FSelection.Nudge(DX, DY); Key := 0; Invalidate;
 end;
+
 procedure TMVEditorCanvas.KeyUp(var Key: Word; Shift: TShiftState);
 begin
   inherited;
@@ -412,7 +329,8 @@ begin
     Message.Result := Message.Result or DLGC_WANTARROWS or DLGC_WANTCHARS;
     Exit;
   end;
-  if (Message.Msg = WM_CAPTURECHANGED) and ((FHandle <> mhNone) or FPanning or FMarquee) then FinishDrag(True);
+  if (Message.Msg = WM_CAPTURECHANGED) and
+    ((FHandle <> mhNone) or FPanning or FMarquee or (FDecoration <> mdhNone)) then FinishDrag(True);
   if Message.Msg = WM_KILLFOCUS then FSpace := False;
   inherited;
 end;

@@ -21,6 +21,10 @@ begin
   Document.Entrance := Host.Entrance;
   Document.Hold := Host.Hold;
   Document.ExitEffect := Host.ExitEffect;
+  Document.EntranceMotion := Host.EntranceMotion;
+  Document.ExitMotion := Host.ExitMotion;
+  Document.EntranceVisibility := Host.EntranceVisibility;
+  Document.ExitVisibility := Host.ExitVisibility;
   Document.EntranceDirection := Host.EntranceDirection;
   Document.ExitDirection := Host.ExitDirection;
   Document.EntranceTiming := Host.EntranceTiming;

@@ -27,7 +27,7 @@ function EvaluateMVMotion(const Document: TMVDocument; Time, Duration: Double;
 
 implementation
 
-uses System.Math, MVAnimationCatalog, MVTransitionTiming, MVAnimationSequence;
+uses System.Math, MVAnimationCatalog, MVAnimationSequence, MVTransitionParts, MVTransitionComposition;
 
 function MVTransitionName(ID: Integer): string;
 var Item: TMVAnimationDescriptor;
@@ -39,42 +39,6 @@ function MVHoldName(ID: Integer): string;
 var Item: TMVAnimationDescriptor;
 begin
   if FindMVAnimation(makHold, ID, Item) then Result := Item.Name else Result := '静止';
-end;
-
-procedure ApplyTransition(var Motion: TMVMotion; ID: Integer; P: Double;
-  const Document: TMVDocument; var Input: TMVAnimationInput);
-var Item: TMVAnimationDescriptor; Timing: Integer; Strength: Double;
-begin
-  if not FindMVAnimation(makTransition, ID, Item) or not Assigned(Item.Evaluate) then Exit;
-  if Input.Leaving then Timing := Document.ExitTiming else Timing := Document.EntranceTiming;
-  Input.CustomTiming := Timing <> MV_TIMING_DEFAULT;
-  Input.Progress := EnsureRange(P, 0.0, 1.0);
-  if Input.CustomTiming then
-    Input.Progress := EvaluateMVTiming(Timing, Input.Progress);
-  Item.Evaluate(Motion, Input);
-  if Input.Leaving then Strength := Document.ExitStrength else Strength := Document.EntranceStrength;
-  // 表示・消去の役割は残し、移動・回転・拡縮・ぼかしの変化量だけを状態別に調整する。
-  Motion.X := Motion.X * Strength;
-  Motion.Y := Motion.Y * Strength;
-  Motion.Angle := Motion.Angle * Strength;
-  Motion.Tracking := Motion.Tracking * Strength;
-  Motion.Scale := 1 + (Motion.Scale - 1) * Strength;
-  Motion.ScaleX := 1 + (Motion.ScaleX - 1) * Strength;
-  Motion.ScaleY := 1 + (Motion.ScaleY - 1) * Strength;
-  Motion.BlurSigma := Motion.BlurSigma * Strength;
-  Motion.GlitchAmount := Motion.GlitchAmount * Strength;
-  // 位置・角度・字間には引きや行き過ぎを残し、画像の値域と反転しない倍率だけを制限する。
-  Motion.Opacity := EnsureRange(Motion.Opacity, Single(0), Single(1));
-  Motion.Scale := Max(Single(0), Motion.Scale);
-  Motion.ScaleX := Max(Single(0), Motion.ScaleX);
-  Motion.ScaleY := Max(Single(0), Motion.ScaleY);
-  Motion.BlurSigma := EnsureRange(Motion.BlurSigma, Single(0), Single(40));
-  Motion.GlitchAmount := EnsureRange(Motion.GlitchAmount, Single(0), Single(40));
-  Motion.ClipLeft := EnsureRange(Motion.ClipLeft, Single(0), Single(1));
-  Motion.ClipRight := EnsureRange(Motion.ClipRight, Single(0), Single(1));
-  Motion.ClipTop := EnsureRange(Motion.ClipTop, Single(0), Single(1));
-  Motion.ClipBottom := EnsureRange(Motion.ClipBottom, Single(0), Single(1));
-  Motion.MaskVisibility := EnsureRange(Motion.MaskVisibility, Single(0), Single(1));
 end;
 
 function EvaluateMVMotion(const Document: TMVDocument; Time, Duration, EntranceTime, ExitTime: Double;
@@ -92,12 +56,12 @@ var InDelay, OutDelay: Double;
 begin
   InDelay := Document.EntranceDelay;
   OutDelay := Document.ExitDelay;
-  if Document.Entrance = 0 then
+  if not HasMVTransitionParts(Document.Entrance, Document.EntranceMotion, Document.EntranceVisibility) then
   begin
     InDelay := 0;
     if not ForShape then EntranceTime := 0;
   end;
-  if Document.ExitEffect = 0 then
+  if not HasMVTransitionParts(Document.ExitEffect, Document.ExitMotion, Document.ExitVisibility) then
   begin
     OutDelay := 0;
     if not ForShape then ExitTime := 0;
@@ -140,18 +104,32 @@ begin
   if (Schedule.EntranceSpan > 0) and (Time < Schedule.EntranceSpan) then
   begin
     StartTime := Max(0, EntranceRank) * Schedule.EntranceDelay;
+    // 見え方「なし」や弾性曲線でも、開始時刻前の文字は表示しない。
+    if Time < StartTime then
+    begin
+      Result.Opacity := 0;
+      Exit;
+    end;
     P := UnitProgress(Time, StartTime, Schedule.EntranceTime);
     Input.Direction := TMVAnimationDirection(Document.EntranceDirection);
-    ApplyTransition(Result, Document.Entrance, P, Document, Input);
+    ApplyMVTransition(Result, Document.Entrance, Document.EntranceMotion, Document.EntranceVisibility,
+      Document.EntranceTiming, P, Document.EntranceStrength, Input);
     Input.Envelope := P;
   end
   else if (Schedule.ExitSpan > 0) and (Time >= Duration - Schedule.ExitSpan) then
   begin
     StartTime := Duration - Schedule.ExitSpan + Max(0, ExitRank) * Schedule.ExitDelay;
+    // 消去済みの文字は表示中の演出を重ねる前に除外し、曲線の跳ね返りによる再表示を防ぐ。
+    if Time >= StartTime + Schedule.ExitTime then
+    begin
+      Result.Opacity := 0;
+      Exit;
+    end;
     P := UnitProgress(Time, StartTime, Schedule.ExitTime);
     Input.Leaving := True;
     Input.Direction := TMVAnimationDirection(Document.ExitDirection);
-    ApplyTransition(Result, Document.ExitEffect, P, Document, Input);
+    ApplyMVTransition(Result, Document.ExitEffect, Document.ExitMotion, Document.ExitVisibility,
+      Document.ExitTiming, P, Document.ExitStrength, Input);
     Input.Envelope := 1 - P;
   end;
   // 既存の振幅演出は端で弱める。連続回転などの適用方法は各演出が決める。

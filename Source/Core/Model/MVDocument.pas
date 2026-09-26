@@ -6,7 +6,7 @@ interface
 uses System.SysUtils, System.UITypes, MVShapeTypes, MVStyleTypes, MVAppearanceTypes, MVPositionMotionTypes;
 
 const
-  MV_DOCUMENT_VERSION = 7; // 既存演出へ重ねる追加の位置モーションも保存する。
+  MV_DOCUMENT_VERSION = 9; // 登場・退場の動きと見え方を独立して保存する。
   MV_MAX_TEXT_LENGTH = 1024; // 異常設定による組版の過大な負荷を抑える。
   MV_MAX_UNITS = 512; // 1フレーズ内の配置要素数の上限。
   MV_MAX_DATA_LENGTH = 32767; // ホストの単行文字列項目へ保存する上限。
@@ -34,9 +34,11 @@ type
     Text: string; // 1フレーズ全体の歌詞。LFで改行を保持する。
     Style: TMVStyle; // フレーズ共通の書式。
     Units: TArray<TMVPlacement>; // 編集画面で扱う文字単位の配置。
-    Entrance: Integer; // 登場演出の安定した識別値。
+    Entrance: Integer; // 旧登場演出の固定ID。引継ぎ指定の要素を復元するため残す。
     Hold: Integer; // 表示中演出の安定した識別値。
-    ExitEffect: Integer; // 退場演出の安定した識別値。
+    ExitEffect: Integer; // 旧退場演出の固定ID。新しい明示指定を優先する。
+    EntranceMotion, ExitMotion: Integer; // 動きの固定ID。-1は旧設定を引継ぎ、0は動かさない。
+    EntranceVisibility, ExitVisibility: Integer; // 見え方の固定ID。-1は引継ぎ、0は表示効果なし。
     EntranceDirection: Integer; // 登場元または変形軸。上0・下1・左2・右3。
     ExitDirection: Integer; // 退場先または変形軸。上0・下1・左2・右3。
     EntranceTiming: Integer; // 登場の動き方の固定ID。0は従来の種類ごとの曲線。
@@ -67,7 +69,7 @@ procedure ValidateMVAnimation(const Document: TMVDocument);
 
 implementation
 
-uses System.Math, MVAnimationTypes, MVAnimationCatalog, MVTransitionTiming, MVAnimationSequence;
+uses System.Math, MVAnimationTypes, MVAnimationCatalog, MVTransitionTiming, MVAnimationSequence, MVTransitionParts;
 
 function ResolveMVStyle(const Common: TMVStyle; const Item: TMVPlacement): TMVStyle;
 begin
@@ -79,6 +81,10 @@ function DefaultMVDocument: TMVDocument;
 begin
   Result := Default(TMVDocument);
   Result.Style := DefaultMVStyle;
+  Result.EntranceMotion := MV_TRANSITION_INHERIT;
+  Result.ExitMotion := MV_TRANSITION_INHERIT;
+  Result.EntranceVisibility := MV_TRANSITION_INHERIT;
+  Result.ExitVisibility := MV_TRANSITION_INHERIT;
   Result.EntranceDirection := Ord(madDown);
   Result.ExitDirection := Ord(madUp);
   Result.Amount := 60;
@@ -110,6 +116,11 @@ begin
     not IsMVAnimationID(makTransition, Document.ExitEffect) or
     not IsMVAnimationID(makHold, Document.Hold) then
     raise EArgumentException.Create('未対応のアニメーションが指定されています。');
+  if not IsMVTransitionPartID(mtpMotion, Document.EntranceMotion) or
+    not IsMVTransitionPartID(mtpMotion, Document.ExitMotion) or
+    not IsMVTransitionPartID(mtpVisibility, Document.EntranceVisibility) or
+    not IsMVTransitionPartID(mtpVisibility, Document.ExitVisibility) then
+    raise EArgumentException.Create('未対応の動きまたは見え方が指定されています。');
   if not IsMVTimingID(Document.EntranceTiming) or not IsMVTimingID(Document.ExitTiming) then
     raise EArgumentException.Create('未対応のアニメーションの動き方が指定されています。');
   CheckRange(Document.Amount, 0, 2000);
