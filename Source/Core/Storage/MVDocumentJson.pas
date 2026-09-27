@@ -13,7 +13,7 @@ function TryDecodeMVDocument(const Value: string; var Document: TMVDocument; out
 implementation
 
 uses System.SysUtils, System.JSON, System.Generics.Collections, MVTextUnits, MVAnimationTypes,
-  MVStyleTypes, MVStyleJson, MVAppearanceJson, MVPositionMotionJson, MVTransitionParts;
+  MVStyleTypes, MVStyleJson, MVAppearanceJson, MVPositionMotionJson;
 
 procedure AddNumber(Obj: TJSONObject; const Key: string; Value: Double);
 begin
@@ -43,9 +43,7 @@ begin
     Root.AddPair('positionMotion', EncodeMVPositionMotion(Document.PositionMotion));
     Anim := TJSONObject.Create;
     Root.AddPair('animation', Anim);
-    AddInteger(Anim, 'in', Document.Entrance);
     AddInteger(Anim, 'hold', Document.Hold);
-    AddInteger(Anim, 'out', Document.ExitEffect);
     AddInteger(Anim, 'inMotion', Document.EntranceMotion);
     AddInteger(Anim, 'outMotion', Document.ExitMotion);
     AddInteger(Anim, 'inVisibility', Document.EntranceVisibility);
@@ -57,7 +55,9 @@ begin
     AddNumber(Anim, 'amount', Document.Amount);
     AddInteger(Anim, 'inOrder', Document.EntranceOrder);
     AddInteger(Anim, 'outOrder', Document.ExitOrder);
-    AddInteger(Anim, 'unit', Document.AnimationUnit);
+    AddInteger(Anim, 'inUnit', Document.EntranceUnit);
+    AddInteger(Anim, 'holdUnit', Document.HoldUnit);
+    AddInteger(Anim, 'outUnit', Document.ExitUnit);
     AddNumber(Anim, 'inStrength', Document.EntranceStrength);
     AddNumber(Anim, 'holdStrength', Document.HoldStrength);
     AddNumber(Anim, 'outStrength', Document.ExitStrength);
@@ -111,10 +111,10 @@ function TryDecodeMVDocument(const Value: string; var Document: TMVDocument; out
 var
   Parsed, ShapeValue, StyleValue: TJSONValue;
   StyleFields: TMVStyleFields;
-  Root, Style, Anim, Shape, Placement: TJSONObject;
+  Root, Style, Anim, Shape, Placement, OldPositionMotion: TJSONObject;
   Units: TJSONArray;
   Candidate: TMVDocument;
-  I: Integer;
+  I, Version: Integer;
 begin
   Result := False;
   Error := '';
@@ -127,7 +127,8 @@ begin
       if not (Parsed is TJSONObject) then
         raise EArgumentException.Create('配置データを読み取れません。');
       Root := TJSONObject(Parsed);
-      if not (Root.GetValue<Integer>('version') in [1, 2, 3, 4, 5, 6, 7, 8, MV_DOCUMENT_VERSION]) then
+      Version := Root.GetValue<Integer>('version');
+      if not (Version in [1..MV_DOCUMENT_VERSION]) then
         raise EArgumentException.Create('未対応の配置データ形式です。');
       Candidate := DefaultMVDocument;
       Candidate.Appearance := DecodeMVAppearance(Root.GetValue('appearance'));
@@ -137,24 +138,36 @@ begin
       Style := Root.GetValue<TJSONObject>('style');
       DecodeMVStyle(Style, Candidate.Style, StyleFields, True);
       Anim := Root.GetValue<TJSONObject>('animation');
-      Candidate.Entrance := Anim.GetValue<Integer>('in');
       Candidate.Hold := Anim.GetValue<Integer>('hold');
-      Candidate.ExitEffect := Anim.GetValue<Integer>('out');
-      // 未保存の要素は旧複合IDから解決する。「なし」の明示指定は引継ぎと区別して維持する。
-      Candidate.EntranceMotion := Anim.GetValue<Integer>('inMotion', MV_TRANSITION_INHERIT);
-      Candidate.ExitMotion := Anim.GetValue<Integer>('outMotion', MV_TRANSITION_INHERIT);
-      Candidate.EntranceVisibility := Anim.GetValue<Integer>('inVisibility', MV_TRANSITION_INHERIT);
-      Candidate.ExitVisibility := Anim.GetValue<Integer>('outVisibility', MV_TRANSITION_INHERIT);
-      Candidate.EntranceDirection := Anim.GetValue<Integer>('inDirection', LegacyMVDirection(Candidate.Entrance, False));
-      Candidate.ExitDirection := Anim.GetValue<Integer>('outDirection', LegacyMVDirection(Candidate.ExitEffect, True));
+      Candidate.EntranceMotion := Anim.GetValue<Integer>('inMotion', 0);
+      Candidate.ExitMotion := Anim.GetValue<Integer>('outMotion', 0);
+      Candidate.EntranceVisibility := Anim.GetValue<Integer>('inVisibility', 0);
+      Candidate.ExitVisibility := Anim.GetValue<Integer>('outVisibility', 0);
+      // 旧文書の引継ぎ指定は無効として扱い、配置と書式だけを読み取れるようにする。
+      if Version < MV_DOCUMENT_VERSION then
+      begin
+        if Candidate.EntranceMotion = -1 then Candidate.EntranceMotion := 0;
+        if Candidate.ExitMotion = -1 then Candidate.ExitMotion := 0;
+        if Candidate.EntranceVisibility = -1 then Candidate.EntranceVisibility := 0;
+        if Candidate.ExitVisibility = -1 then Candidate.ExitVisibility := 0;
+      end;
+      Candidate.EntranceDirection := Anim.GetValue<Integer>('inDirection', Ord(madDown));
+      Candidate.ExitDirection := Anim.GetValue<Integer>('outDirection', Ord(madUp));
       Candidate.EntranceTiming := Anim.GetValue<Integer>('inTiming', 0);
       Candidate.ExitTiming := Anim.GetValue<Integer>('outTiming', 0);
-      NormalizeMVDirection(Candidate.Entrance, Candidate.EntranceDirection, False);
-      NormalizeMVDirection(Candidate.ExitEffect, Candidate.ExitDirection, True);
       Candidate.Amount := Anim.GetValue<Double>('amount');
       Candidate.EntranceOrder := Anim.GetValue<Integer>('inOrder', 0);
       Candidate.ExitOrder := Anim.GetValue<Integer>('outOrder', 0);
-      Candidate.AnimationUnit := Anim.GetValue<Integer>('unit', 0);
+      Candidate.EntranceUnit := Anim.GetValue<Integer>('inUnit', Anim.GetValue<Integer>('unit', 0));
+      Candidate.HoldUnit := Anim.GetValue<Integer>('holdUnit', Anim.GetValue<Integer>('unit', 0));
+      Candidate.ExitUnit := Anim.GetValue<Integer>('outUnit', Anim.GetValue<Integer>('unit', 0));
+      if (Version < 11) and (Root.GetValue('positionMotion') is TJSONObject) then
+      begin
+        OldPositionMotion := Root.GetValue<TJSONObject>('positionMotion');
+        if (OldPositionMotion.GetValue('unit') = nil) and
+          (OldPositionMotion.GetValue<Integer>('target', 0) = 0) then
+          Candidate.PositionMotion.UnitMode := Anim.GetValue<Integer>('unit', 0);
+      end;
       Candidate.EntranceStrength := Anim.GetValue<Double>('inStrength', 1);
       Candidate.HoldStrength := Anim.GetValue<Double>('holdStrength', 1);
       Candidate.ExitStrength := Anim.GetValue<Double>('outStrength', 1);

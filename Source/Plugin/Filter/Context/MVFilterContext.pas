@@ -71,7 +71,6 @@ var
   NewLayout: TMVLayout;
   Key, Error: string;
   Width, Height: Integer;
-  X, Y: Double;
   Surface: ISkSurface;
 begin
   if (Video = nil) or (Video^.Object_ = nil) or not Assigned(Video^.SetImageData) then Exit;
@@ -95,10 +94,10 @@ begin
       FLocation.StartFrame := Video^.Object_^.FrameS;
       FLocation.EndFrame := Video^.Object_^.FrameE;
     end;
-    Key := MVSettingsKey(Settings);
+    Key := MVSettingsKey(Settings) + Format('|%d:%d', [Width, Height]);
     if (FLayout = nil) or (Key <> FKey) then
     begin
-      if Settings.Extended and (Settings.Data <> '') then
+      if Settings.Data <> '' then
       begin
         if not TryDecodeMVStoredDocument(Settings.Data, Candidate, Error) then Exit;
         ApplyMVHostDocument(Candidate, Settings.Document);
@@ -107,6 +106,7 @@ begin
       begin
         Candidate := Settings.Document;
         SetMVText(Candidate, Candidate.Text);
+        FitMVInitialStyle(Candidate, Width, Height);
         ValidateMVDocument(Candidate);
       end;
       NewLayout := TMVLayout.Create(Candidate);
@@ -125,15 +125,7 @@ begin
     Surface := TSkSurface.MakeRasterDirect(TSkImageInfo.Create(Width, Height,
       TSkColorType.RGBA8888, TSkAlphaType.Unpremul), @FPixels[0], Width * 4);
     if Surface = nil then Exit;
-    X := Settings.X;
-    Y := Settings.Y;
-    if Settings.Extended and (Settings.Data <> '') then
-    begin
-      X := 0;
-      Y := 0;
-    end;
-    if IsNan(X) or IsInfinite(X) or IsNan(Y) or IsInfinite(Y) then Exit;
-    DrawMVDocument(Surface.Canvas, FDocument, FLayout, Width, Height, X, Y,
+    DrawMVDocument(Surface.Canvas, FDocument, FLayout, Width, Height, 0, 0,
       Video^.Object_^.Time, Video^.Object_^.TimeTotal, Settings.EntranceTime, Settings.ExitTime);
     Surface := nil;
     Video^.SetImageData(@FPixels[0], Width, Height);

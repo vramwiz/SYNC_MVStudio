@@ -5,14 +5,12 @@ interface
 
 type
   TMVPositionMotionKind = (mpkNone, mpkReciprocate, mpkWave, mpkEllipse, mpkFigureEight, mpkDrift, mpkJitter);
-  TMVPositionMotionTarget = (mptAnimationUnit, mptPhrase);
-
   TMVPositionMotionSettings = record
     Kind: Integer; // なし0・往復1・波2・円/楕円3・8の字4・漂流5・震え6。保存IDは並べ替えない。
     AmplitudeX, AmplitudeY: Single; // 出力座標軸ごとの移動幅。0ならその軸を固定する。
     Period: Single; // 全区間を通じて進む軌道の周期。秒単位。
     Direction: Single; // 軌道の向き。幅を掛ける前に適用する回転角、度単位。
-    Target: Integer; // 既存の動作単位0・フレーズ全体1。
+    UnitMode: Integer; // 非同期専用の単位。文字0・行1・登録グループ2・全体3。
     EntranceStrength, HoldStrength, ExitStrength: Single; // 追加移動だけの倍率。1が100%。
     PhaseStep: Single; // 次の動作単位へ与える位相の遅れ。度単位、0なら同位相。
   end;
@@ -26,7 +24,7 @@ function MVPositionMotionName(Kind: TMVPositionMotionKind): string;
 
 implementation
 
-uses System.SysUtils, System.Math;
+uses System.SysUtils, System.Math, MVAnimationSequence;
 
 function DefaultMVPositionMotion: TMVPositionMotionSettings;
 begin
@@ -48,10 +46,10 @@ end;
 procedure ValidateMVPositionMotion(const Value: TMVPositionMotionSettings);
 begin
   CheckRange(Value.Kind, Ord(Low(TMVPositionMotionKind)), Ord(High(TMVPositionMotionKind)));
-  CheckRange(Value.Target, Ord(Low(TMVPositionMotionTarget)), Ord(High(TMVPositionMotionTarget)));
+  CheckRange(Value.UnitMode, Ord(Low(TMVAnimationUnit)), Ord(High(TMVAnimationUnit)));
   CheckRange(Value.AmplitudeX, 0, 2000);
   CheckRange(Value.AmplitudeY, 0, 2000);
-  CheckRange(Value.Period, 0.05, 60);
+  CheckRange(Value.Period, 0.05, 120);
   CheckRange(Value.Direction, -180, 180);
   CheckRange(Value.EntranceStrength, 0, 10);
   CheckRange(Value.HoldStrength, 0, 10);

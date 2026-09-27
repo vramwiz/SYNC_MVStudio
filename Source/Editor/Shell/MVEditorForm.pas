@@ -25,6 +25,9 @@ type
     procedure Command(Sender: TObject);
     procedure Shortcut(Sender: TObject; var Key: Word; Shift: TShiftState);
     procedure Closing(Sender: TObject; var CanClose: Boolean);
+  protected
+    // フォームのHandle再生成後もWindowsタイトルバーの暗色指定を保つ。
+    procedure CreateWnd; override;
   public
     // 歌詞をホストに残し、独立した配置・書式を編集する。保存成功までは閉じない。
     constructor CreateEditor(const Document: TMVDocument; Width, Height: Integer;
@@ -37,8 +40,28 @@ type
 
 implementation
 
-uses Winapi.Windows, System.Types, System.Math, System.UITypes, Vcl.Dialogs, Vcl.StdCtrls, MVPlacementToolbar,
+uses Winapi.Windows, Winapi.Dwmapi, System.Types, System.Math, System.UITypes, Vcl.Dialogs, Vcl.StdCtrls, MVPlacementToolbar,
   TextRendererSkiaRuntime, TextRendererSkiaBootstrap, MVArrangement, MVGrouping;
+
+procedure TMVEditorForm.CreateWnd;
+const
+  DarkModeAttribute = 20;
+  OldDarkModeAttribute = 19;
+  CaptionColorAttribute = 35;
+  TextColorAttribute = 36;
+var
+  Enabled: BOOL;
+  CaptionColor, TextColor: COLORREF;
+begin
+  inherited;
+  Enabled := True;
+  if Failed(DwmSetWindowAttribute(Handle, DarkModeAttribute, @Enabled, SizeOf(Enabled))) then
+    DwmSetWindowAttribute(Handle, OldDarkModeAttribute, @Enabled, SizeOf(Enabled));
+  CaptionColor := $00282828;
+  TextColor := $00E8E8E8;
+  DwmSetWindowAttribute(Handle, CaptionColorAttribute, @CaptionColor, SizeOf(CaptionColor));
+  DwmSetWindowAttribute(Handle, TextColorAttribute, @TextColor, SizeOf(TextColor));
+end;
 
 constructor TMVEditorForm.CreateEditor(const Document: TMVDocument; Width, Height: Integer;
   Duration, EntranceTime, ExitTime: Double; const Save: TMVSaveDocument);
@@ -59,7 +82,7 @@ begin
   Font.Size := 10;
   FSave := Save;
   FSession := TMVEditSession.Create(Document);
-  // 今回確定する拡張文書から書式を編集画面の管理へ移す。
+  // 保存文書の共通書式は編集画面で管理する。
   FSession.Document.EditorSettings := True;
   FPlacementToolbar := CreateMVPlacementToolbar(Self, Self, Command);
   Body := TPanel.Create(Self);

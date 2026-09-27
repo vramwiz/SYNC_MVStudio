@@ -76,7 +76,7 @@ begin
   CheckValue(Value.ColorAmount, 0, 1);
   CheckValue(Value.GlowPulse, 0, 1);
   CheckValue(Value.ChromaticSwing, 0, 64);
-  CheckValue(Value.Period, 0.05, 60);
+  CheckValue(Value.Period, 0.05, 120);
   CheckValue(Value.SweepMode, 0, 2);
   CheckValue(Value.SweepAmount, 0, 1);
   CheckValue(Value.SweepWidth, 1, 1024);

@@ -1,6 +1,6 @@
 ﻿unit MVEditSession;
 
-// 拡張画面だけの作業用文書とUndo履歴を所有する。ホストへの確定は担当しない。
+// 専用編集画面の作業用文書とUndo履歴を所有する。ホストへの確定は担当しない。
 interface
 
 uses System.Generics.Collections, MVDocument;

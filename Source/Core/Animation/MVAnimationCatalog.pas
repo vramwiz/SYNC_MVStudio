@@ -22,7 +22,7 @@ uses System.SysUtils, MVTransitionBasic, MVTransitionExtended, MVHoldBasic, MVHo
   MVTransitionKinetic, MVTransitionPattern, MVTransitionPath, MVHoldKinetic, MVHoldAccent;
 
 const
-  Transitions: array[0..29] of TMVAnimationDescriptor = (
+  Transitions: array[0..28] of TMVAnimationDescriptor = (
     (ID: 0; Name: 'なし'; Evaluate: nil),
     (ID: 1; Name: 'フェード'; Evaluate: MVFade),
     (ID: 2; Name: 'スライド'; Evaluate: MVSlide),
@@ -41,7 +41,6 @@ const
     (ID: 24; Name: '中央ワイプ'; Evaluate: MVWipeCenter),
     (ID: 26; Name: '集合・飛散'; Evaluate: MVScatter),
     (ID: 27; Name: '交互スライド'; Evaluate: MVAlternatingSlide),
-    (ID: 28; Name: 'ぼかしスライド'; Evaluate: MVBlurSlide),
     (ID: 29; Name: '弾性スライド'; Evaluate: MVSpringSlide),
     (ID: 30; Name: 'スウィング'; Evaluate: MVSwing),
     (ID: 31; Name: '螺旋'; Evaluate: MVSpiral),
@@ -53,19 +52,6 @@ const
     (ID: 37; Name: '波に沿う'; Evaluate: MVWavePath),
     (ID: 38; Name: 'S字で流れ込む'; Evaluate: MVSCurvePath),
     (ID: 39; Name: 'ジグザグで入る'; Evaluate: MVZigzagPath)
-  );
-  // 旧文書の読込・評価だけに使い、ホストの選択肢へは公開しない。
-  LegacyDirections: array[0..9] of TMVAnimationDescriptor = (
-    (ID: 11; Name: 'スライド'; Evaluate: MVSlideLeft),
-    (ID: 12; Name: 'スライド'; Evaluate: MVSlideRight),
-    (ID: 13; Name: 'スライド'; Evaluate: MVSlideUp),
-    (ID: 14; Name: 'スライド'; Evaluate: MVSlideDown),
-    (ID: 19; Name: 'ストレッチ'; Evaluate: MVStretchVertical),
-    (ID: 20; Name: 'フリップ'; Evaluate: MVFlipVertical),
-    (ID: 21; Name: 'ワイプ'; Evaluate: MVWipeRightToLeft),
-    (ID: 22; Name: 'ワイプ'; Evaluate: MVWipeTopToBottom),
-    (ID: 23; Name: 'ワイプ'; Evaluate: MVWipeBottomToTop),
-    (ID: 25; Name: '中央ワイプ'; Evaluate: MVWipeCenterVertical)
   );
   Holds: array[0..15] of TMVAnimationDescriptor = (
     (ID: 0; Name: '静止'; Evaluate: nil),
@@ -106,13 +92,6 @@ begin
     Item := MVAnimationAt(Kind, I);
     if Item.ID = ID then Exit(True);
   end;
-  if Kind = makTransition then
-    for I := 0 to High(LegacyDirections) do
-      if LegacyDirections[I].ID = ID then
-      begin
-        Item := LegacyDirections[I];
-        Exit(True);
-      end;
   Item := Default(TMVAnimationDescriptor);
   Result := False;
 end;

@@ -45,7 +45,7 @@ var Obj: OBJECT_HANDLE; Error: string;
 begin
   try
     if not ResolveMVLegacyTarget(Edit, Obj, Error) then raise EInvalidOp.Create(Error);
-    OpenMVEditor(Edit, Obj, MV_EFFECT_NAME, '拡張編集');
+    OpenMVEditor(Edit, Obj, MV_EFFECT_NAME, '編集');
   except
     on E: Exception do MessageDlg(E.Message, mtError, [mbOK], 0);
   end;

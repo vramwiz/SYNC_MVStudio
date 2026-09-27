@@ -5,14 +5,14 @@ interface
 
 uses MVAnimationTypes;
 
-// Motionを1状態の結果へ置換する。旧設定の引継ぎ、曲線、強さ、描画値域の制限もここで行う。
+// Motionを1状態の結果へ置換する。曲線、強さ、描画値域の制限もここで行う。
 // 文字ごとの開始前・退場後の非表示は、曲線適用前の時刻を持つ呼出し側が管理する。
-procedure ApplyMVTransition(var Motion: TMVMotion; LegacyID, MotionID, VisibilityID, Timing: Integer;
+procedure ApplyMVTransition(var Motion: TMVMotion; MotionID, VisibilityID, Timing: Integer;
   Progress, Strength: Double; const Input: TMVAnimationInput);
 
 implementation
 
-uses System.Math, MVAnimationCatalog, MVTransitionParts, MVTransitionTiming;
+uses System.Math, MVAnimationCatalog, MVTransitionTiming;
 
 function EvaluatePart(ID: Integer; const Input: TMVAnimationInput): TMVMotion;
 var Item: TMVAnimationDescriptor;
@@ -21,25 +21,19 @@ begin
   if FindMVAnimation(makTransition, ID, Item) and Assigned(Item.Evaluate) then Item.Evaluate(Result, Input);
 end;
 
-procedure ApplyMVTransition(var Motion: TMVMotion; LegacyID, MotionID, VisibilityID, Timing: Integer;
+procedure ApplyMVTransition(var Motion: TMVMotion; MotionID, VisibilityID, Timing: Integer;
   Progress, Strength: Double; const Input: TMVAnimationInput);
 var
-  Parts: TMVTransitionParts;
   Movement, Visibility: TMVMotion;
   EvaluatedInput: TMVAnimationInput;
-  Direction: Integer;
 begin
   EvaluatedInput := Input;
-  Direction := Ord(Input.Direction);
-  NormalizeMVDirection(LegacyID, Direction, Input.Leaving);
-  EvaluatedInput.Direction := TMVAnimationDirection(Direction);
   EvaluatedInput.CustomTiming := Timing <> MV_TIMING_DEFAULT;
   EvaluatedInput.Progress := EnsureRange(Progress, 0.0, 1.0);
   if EvaluatedInput.CustomTiming then
     EvaluatedInput.Progress := EvaluateMVTiming(Timing, EvaluatedInput.Progress);
-  Parts := ResolveMVTransitionParts(LegacyID, MotionID, VisibilityID);
-  Movement := EvaluatePart(Parts.MotionID, EvaluatedInput);
-  Visibility := EvaluatePart(Parts.VisibilityID, EvaluatedInput);
+  Movement := EvaluatePart(MotionID, EvaluatedInput);
+  Visibility := EvaluatePart(VisibilityID, EvaluatedInput);
   // 既存評価のフェードは移動量の計算にも使うため、計算後に幾何成分だけを取り出す。
   // 見え方を一度だけ適用し、移動側に含まれる透明度やぼかしが重複することを防ぐ。
   Motion := Visibility;

@@ -6,7 +6,7 @@ interface
 uses System.Types, MVPositionMotionTypes, MVAnimationTime;
 
 // 正規化済みの時間表を使う。UnitIndexは空白を除いた動作単位の通し番号。
-// フレーズ対象では開始順・位相ずれを使わず、全体の登場/退場区間で強さを変える。
+// フレーズ単位は呼出し側が1組にまとめるため、開始順・位相差は0になる。
 function EvaluateMVPositionMotion(const Settings: TMVPositionMotionSettings; Time, Duration: Double;
   const Schedule: TMVAnimationSchedule; UnitIndex, EntranceRank, ExitRank: Integer): TPointF;
 
@@ -27,20 +27,10 @@ var
   InStart, InEnd, OutStart, OutEnd, InLength, OutLength, HoldLength, Width, P: Double;
   HasIn, HasOut: Boolean;
 begin
-  if Settings.Target = Ord(mptPhrase) then
-  begin
-    InStart := 0;
-    InEnd := Schedule.EntranceSpan;
-    OutStart := Duration - Schedule.ExitSpan;
-    OutEnd := Duration;
-  end
-  else
-  begin
-    InStart := Max(0, EntranceRank) * Schedule.EntranceDelay;
-    InEnd := InStart + Schedule.EntranceTime;
-    OutStart := Duration - Schedule.ExitSpan + Max(0, ExitRank) * Schedule.ExitDelay;
-    OutEnd := OutStart + Schedule.ExitTime;
-  end;
+  InStart := Max(0, EntranceRank) * Schedule.EntranceDelay;
+  InEnd := InStart + Schedule.EntranceTime;
+  OutStart := Duration - Schedule.ExitSpan + Max(0, ExitRank) * Schedule.ExitDelay;
+  OutEnd := OutStart + Schedule.ExitTime;
   InLength := Max(0.0, InEnd - InStart);
   OutLength := Max(0.0, OutEnd - OutStart);
   HasIn := InLength > 0;
@@ -121,7 +111,6 @@ begin
     (Time < 0) or (Duration <= 0) or (Time >= Duration) then Exit;
   Strength := MotionStrength(Settings, Time, Duration, Schedule, EntranceRank, ExitRank);
   if Strength = 0 then Exit;
-  if Settings.Target = Ord(mptPhrase) then UnitIndex := 0;
   // 開始遅延と状態の切替で時計を戻さない。正の位相差で次の単位が同じ軌道を遅れてたどる。
   Phase := 2 * Pi * Frac(Time / Settings.Period - Max(0, UnitIndex) * Settings.PhaseStep / 360);
   MotionPath(Settings.Kind, Phase, X, Y);

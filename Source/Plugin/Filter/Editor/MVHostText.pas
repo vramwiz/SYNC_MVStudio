@@ -4,7 +4,7 @@
 interface
 
 // 改行の\nとバックスラッシュの\\だけを1回復号する。未知の並びは原文を保持する。
-// 描画コールバックの生文字列やBase64拡張データには適用しない。
+// 描画コールバックの生文字列やBase64保存データには適用しない。
 function DecodeMVHostText(const Value: string): string;
 
 implementation

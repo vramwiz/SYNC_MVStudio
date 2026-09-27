@@ -18,9 +18,11 @@ type
     UnitGroups: array[0..MV_MAX_UNITS - 1] of Integer; // 各文字の動作単位。対象外は-1。
     Items: array[0..MV_MAX_UNITS - 1] of TMVAnimationGroup; // 最初の出現順に並ぶ動作単位。
   end;
+  PMVAnimationGroups = ^TMVAnimationGroups;
 
-// 行・登録グループ・フレーズの所属と基準矩形を求める。未登録文字はそれぞれ独立させる。
-procedure BuildMVAnimationGroups(const Document: TMVDocument; Layout: TMVLayout; out Groups: TMVAnimationGroups);
+// 指定単位の所属と基準矩形を求める。登録グループの未登録文字はそれぞれ独立させる。
+procedure BuildMVAnimationGroups(const Document: TMVDocument; Layout: TMVLayout; UnitMode: Integer;
+  out Groups: TMVAnimationGroups);
 // 動作中心を動かさず、時間装飾の最大範囲をクリップ矩形だけへ追加する。
 procedure ExpandMVAnimationGroupBounds(const Document: TMVDocument; Layout: TMVLayout;
   const Frame: TMVAppearanceFrame; var Groups: TMVAnimationGroups);
@@ -47,7 +49,8 @@ begin
   end;
 end;
 
-procedure BuildMVAnimationGroups(const Document: TMVDocument; Layout: TMVLayout; out Groups: TMVAnimationGroups);
+procedure BuildMVAnimationGroups(const Document: TMVDocument; Layout: TMVLayout; UnitMode: Integer;
+  out Groups: TMVAnimationGroups);
 var
   Registered: array[0..MV_MAX_UNITS] of Integer;
   I, G, ID, LineGroup: Integer;
@@ -63,7 +66,7 @@ begin
     if Layout.Units[I].DelayIndex < 0 then Continue;
     G := -1;
     ID := Document.Units[I].AnimationGroup;
-    case TMVAnimationUnit(Document.AnimationUnit) of
+    case TMVAnimationUnit(UnitMode) of
       mauLine: G := LineGroup;
       mauGroup: if ID > 0 then G := Registered[ID];
       mauPhrase: if Groups.Count > 0 then G := 0;

@@ -1,6 +1,6 @@
 ﻿unit MVEditorHost;
 
-// ボタンが指定したオブジェクト・エフェクトへ拡張文書を保存するホスト境界。
+// ボタンが指定したオブジェクト・エフェクトへ編集文書を保存するホスト境界。
 interface
 
 uses AviUtl2FilterTypes;
@@ -35,7 +35,7 @@ var
   Document: TMVDocument;
   Form: TMVEditorForm;
   Layout: TMVLayout;
-  EffectName, OldData, OldMode, Error: string;
+  EffectName, OldData, Error: string;
   I, Width, Height: Integer;
   Duration: Double;
   Location: TOBJECT_LAYER_FRAME;
@@ -52,27 +52,7 @@ begin
     // 他対象の描画で共有項目が更新されても、歌詞は指定された対象から直接取得する。
     Settings.Document.Text := DecodeMVHostText(ReadItem(Edit, Obj, EffectName, '歌詞'));
     OldData := ReadItem(Edit, Obj, EffectName, MV_DATA_ITEM);
-    OldMode := ReadItem(Edit, Obj, EffectName, '編集モード');
     CopyMVStudioBackground(Edit, Obj, EffectName, Background);
-    if OldData <> '' then
-    begin
-      if not TryDecodeMVStoredDocument(OldData, Document, Error) then raise EInvalidOp.Create(Error);
-      ApplyMVHostDocument(Document, Settings.Document);
-    end
-    else
-    begin
-      Document := Settings.Document;
-      SetMVText(Document, Document.Text);
-      Layout := TMVLayout.Create(Document);
-      try
-        for I := 0 to High(Document.Units) do
-        begin
-          Document.Units[I].X := Layout.Units[I].Position.X + Settings.X;
-          Document.Units[I].Y := Layout.Units[I].Position.Y + Settings.Y;
-          Document.Units[I].Positioned := True;
-        end;
-      finally Layout.Free; end;
-    end;
     Width := 1920;
     Height := 1080;
     Duration := 5;
@@ -88,7 +68,27 @@ begin
           PEditInfoPrefix(Edit^.Info)^.Scale / PEditInfoPrefix(Edit^.Info)^.Rate;
       end;
     end;
-    Commit := TMVEditorCommit.Create(Edit, Obj, EffectName, OldData, OldMode);
+    if OldData <> '' then
+    begin
+      if not TryDecodeMVStoredDocument(OldData, Document, Error) then raise EInvalidOp.Create(Error);
+      ApplyMVHostDocument(Document, Settings.Document);
+    end
+    else
+    begin
+      Document := Settings.Document;
+      SetMVText(Document, Document.Text);
+      FitMVInitialStyle(Document, Max(1, Width), Max(1, Height));
+      Layout := TMVLayout.Create(Document);
+      try
+        for I := 0 to High(Document.Units) do
+        begin
+          Document.Units[I].X := Layout.Units[I].Position.X;
+          Document.Units[I].Y := Layout.Units[I].Position.Y;
+          Document.Units[I].Positioned := True;
+        end;
+      finally Layout.Free; end;
+    end;
+    Commit := TMVEditorCommit.Create(Edit, Obj, EffectName, OldData);
     try
       Save :=
         function(const Edited: TMVDocument): string

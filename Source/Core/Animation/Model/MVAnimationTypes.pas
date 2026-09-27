@@ -57,11 +57,6 @@ function MVAnimationDirectionName(Direction: TMVAnimationDirection): string;
 procedure SetMVDirectedOffset(var Motion: TMVMotion; Direction: TMVAnimationDirection; Distance: Double);
 // 上下または左右で反対側の方向を返す。
 function OppositeMVDirection(Direction: TMVAnimationDirection): TMVAnimationDirection;
-// 方向を保存していない旧文書で、従来の演出に対応する方向値を返す。
-function LegacyMVDirection(EffectID: Integer; Leaving: Boolean): Integer;
-// 旧方向別IDを共通の種類と独立した方向値へ変換する。
-// 他の演出IDと方向値には触れず、旧IDは今後も別の演出に再利用しない。
-procedure NormalizeMVDirection(var EffectID, Direction: Integer; Leaving: Boolean);
 
 implementation
 
@@ -87,44 +82,6 @@ function OppositeMVDirection(Direction: TMVAnimationDirection): TMVAnimationDire
 const Opposite: array[TMVAnimationDirection] of TMVAnimationDirection = (madDown, madUp, madRight, madLeft);
 begin
   Result := Opposite[Direction];
-end;
-
-function LegacyMVDirection(EffectID: Integer; Leaving: Boolean): Integer;
-begin
-  if Leaving then Result := Ord(madUp) else Result := Ord(madDown);
-  case EffectID of
-    8, 18, 24, 27: Result := Ord(madLeft);
-    10: if Leaving then Result := Ord(madRight) else Result := Ord(madLeft);
-  end;
-end;
-
-procedure NormalizeMVDirection(var EffectID, Direction: Integer; Leaving: Boolean);
-begin
-  case EffectID of
-    11..14:
-      begin
-        case EffectID of
-          11: Direction := Ord(madLeft);
-          12: Direction := Ord(madRight);
-          13: Direction := Ord(madUp);
-          14: Direction := Ord(madDown);
-        end;
-        EffectID := 2;
-      end;
-    19: begin EffectID := 18; Direction := Ord(madUp); end;
-    20: begin EffectID := 8; Direction := Ord(madUp); end;
-    21..23:
-      begin
-        case EffectID of
-          21: Direction := Ord(madRight);
-          22: Direction := Ord(madUp);
-          23: Direction := Ord(madDown);
-        end;
-        if Leaving then Direction := Ord(OppositeMVDirection(TMVAnimationDirection(Direction)));
-        EffectID := 10;
-      end;
-    25: begin EffectID := 24; Direction := Ord(madUp); end;
-  end;
 end;
 
 function DefaultMVMotion: TMVMotion;

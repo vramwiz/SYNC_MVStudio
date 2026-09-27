@@ -100,6 +100,9 @@
         <DCCReference Include="Source\Lib\AviUtl2FilterTypes.pas"/>
         <DCCReference Include="Source\Plugin\Filter\SYNC_MVStudio_FilterPlugin.pas"/>
         <DCCReference Include="Source\Lib\TextRenderer\TextRenderer.pas"/>
+        <DCCReference Include="Source\Lib\TextRenderer\TextRendererSkiaGeometry.pas"/>
+        <DCCReference Include="Source\Lib\TextRenderer\TextRendererSkiaPaints.pas"/>
+        <DCCReference Include="Source\Lib\TextRenderer\TextRendererSkiaUnits.pas"/>
         <DCCReference Include="Source\Lib\TextRenderer\TextRendererSkia.pas"/>
         <DCCReference Include="Source\Lib\TextRenderer\TextRendererSkiaBootstrap.pas"/>
         <DCCReference Include="Source\Lib\TextRenderer\TextRendererSkiaRuntime.pas"/>
@@ -157,9 +160,11 @@
         <DCCReference Include="Source\Rendering\MVRenderer.pas"/>
         <DCCReference Include="Source\Editor\Interaction\MVSelection.pas"/>
         <DCCReference Include="Source\Editor\Interaction\MVTransformGeometry.pas"/>
+        <DCCReference Include="Source\Editor\Interaction\MVCanvasTargets.pas"/>
         <DCCReference Include="Source\Editor\Canvas\MVCanvasPainter.pas"/>
         <DCCReference Include="Source\Editor\Canvas\MVCanvasViewport.pas"/>
         <DCCReference Include="Source\Editor\Canvas\MVSelectionOverlay.pas"/>
+        <DCCReference Include="Source\Editor\Toolbar\MVFontCombo.pas"/>
         <DCCReference Include="Source\Editor\Toolbar\MVFontToolbar.pas"/>
         <DCCReference Include="Source\Editor\Model\MVStyleGesture.pas"/>
         <DCCReference Include="Source\Editor\Interaction\MVDecorationHandles.pas"/>

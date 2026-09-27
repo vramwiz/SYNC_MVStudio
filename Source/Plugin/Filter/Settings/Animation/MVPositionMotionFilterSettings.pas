@@ -12,19 +12,20 @@ function ReadMVPositionMotionSettings: TMVPositionMotionSettings;
 
 implementation
 
-uses AviUtl2FilterTypes, PluginFilterTable;
+uses AviUtl2FilterTypes, PluginFilterTable, MVAnimationSequence;
 
 var
   MotionGroup: TFILTER_ITEM_GROUP;
-  KindItem, TargetItem: TFILTER_ITEM_SELECT;
-  XItem, YItem, PeriodItem, DirectionItem, PhaseItem: TFILTER_ITEM_TRACK;
+  KindItem, UnitItem: TFILTER_ITEM_SELECT;
+  XItem, YItem, DirectionItem, PhaseItem: TFILTER_ITEM_TRACK;
   InStrengthItem, HoldStrengthItem, OutStrengthItem: TFILTER_ITEM_TRACK;
   KindOptions: array[0..Ord(High(TMVPositionMotionKind)) + 1] of TFILTER_ITEM_SELECT_ITEM; // nil終端を含む。
   KindNames: array[TMVPositionMotionKind] of string;
-  TargetOptions: array[0..2] of TFILTER_ITEM_SELECT_ITEM;
+  UnitOptions: array[0..Ord(High(TMVAnimationUnit)) + 1] of TFILTER_ITEM_SELECT_ITEM;
+  UnitNames: array[TMVAnimationUnit] of string;
 
 procedure RegisterMVPositionMotionSettings;
-var Defaults: TMVPositionMotionSettings; Kind: TMVPositionMotionKind;
+var Defaults: TMVPositionMotionSettings; Kind: TMVPositionMotionKind; MotionUnit: TMVAnimationUnit;
 begin
   Defaults := DefaultMVPositionMotion;
   for Kind := Low(TMVPositionMotionKind) to High(TMVPositionMotionKind) do
@@ -33,30 +34,31 @@ begin
     KindOptions[Ord(Kind)].Name := PChar(KindNames[Kind]);
     KindOptions[Ord(Kind)].Value := Ord(Kind);
   end;
-  TargetOptions[0].Name := '動かす単位に合わせる';
-  TargetOptions[1].Name := 'フレーズ全体';
-  TargetOptions[1].Value := Ord(mptPhrase);
-  AddGroup(MotionGroup, '追加の位置モーション', 0);
-  AddSelect(KindItem, '追加の動き', Defaults.Kind, @KindOptions[0]);
-  AddSelect(TargetItem, '追加の適用対象', Defaults.Target, @TargetOptions[0]);
-  AddTrack(XItem, '追加の横幅', Defaults.AmplitudeX, 0, 2000, 1);
-  AddTrack(YItem, '追加の縦幅', Defaults.AmplitudeY, 0, 2000, 1);
-  AddTrack(PeriodItem, '追加の周期', Defaults.Period, 0.05, 60, 0.01);
-  AddTrack(DirectionItem, '追加の方向(度)', Defaults.Direction, -180, 180, 1);
-  AddTrack(InStrengthItem, '追加の登場強さ(%)', Defaults.EntranceStrength * 100, 0, 1000, 1);
-  AddTrack(HoldStrengthItem, '追加の表示中強さ(%)', Defaults.HoldStrength * 100, 0, 1000, 1);
-  AddTrack(OutStrengthItem, '追加の退場強さ(%)', Defaults.ExitStrength * 100, 0, 1000, 1);
-  AddTrack(PhaseItem, '追加の位相ずれ(度)', Defaults.PhaseStep, -360, 360, 1);
+  for MotionUnit := Low(TMVAnimationUnit) to High(TMVAnimationUnit) do
+  begin
+    UnitNames[MotionUnit] := MVAnimationUnitName(MotionUnit);
+    UnitOptions[Ord(MotionUnit)].Name := PChar(UnitNames[MotionUnit]);
+    UnitOptions[Ord(MotionUnit)].Value := Ord(MotionUnit);
+  end;
+  AddGroup(MotionGroup, '非同期', 0);
+  AddSelect(KindItem, '非同期 動き', Defaults.Kind, @KindOptions[0]);
+  AddSelect(UnitItem, '非同期 単位', Defaults.UnitMode, @UnitOptions[0]);
+  AddTrack(XItem, '非同期 横幅', Defaults.AmplitudeX, 0, 2000, 1);
+  AddTrack(YItem, '非同期 縦幅', Defaults.AmplitudeY, 0, 2000, 1);
+  AddTrack(DirectionItem, '非同期 方向(度)', Defaults.Direction, -180, 180, 1);
+  AddTrack(InStrengthItem, '非同期 前強さ(%)', Defaults.EntranceStrength * 100, 0, 1000, 1);
+  AddTrack(HoldStrengthItem, '非同期 中強さ(%)', Defaults.HoldStrength * 100, 0, 1000, 1);
+  AddTrack(OutStrengthItem, '非同期 後強さ(%)', Defaults.ExitStrength * 100, 0, 1000, 1);
+  AddTrack(PhaseItem, '非同期 位相(度)', Defaults.PhaseStep, -360, 360, 1);
 end;
 
 function ReadMVPositionMotionSettings: TMVPositionMotionSettings;
 begin
   Result := DefaultMVPositionMotion;
   Result.Kind := KindItem.Value;
-  Result.Target := TargetItem.Value;
+  Result.UnitMode := UnitItem.Value;
   Result.AmplitudeX := XItem.Value;
   Result.AmplitudeY := YItem.Value;
-  Result.Period := PeriodItem.Value;
   Result.Direction := DirectionItem.Value;
   Result.EntranceStrength := InStrengthItem.Value / 100;
   Result.HoldStrength := HoldStrengthItem.Value / 100;

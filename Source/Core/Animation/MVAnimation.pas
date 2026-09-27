@@ -12,9 +12,9 @@ type
 function MVTransitionName(ID: Integer): string;
 // 固定IDに対応する表示中演出名。未登録なら「静止」を返す。
 function MVHoldName(ID: Integer): string;
-// 文字遅延込みの区間を作る。ForShapeでは文字演出が「なし」でも図形用の所要時間を残す。
+// 前と後それぞれの単位数で文字遅延込みの区間を作る。ForShapeでは演出なしでも所要時間を残す。
 function MVDocumentSchedule(const Document: TMVDocument; Duration, EntranceTime, ExitTime: Double;
-  UnitCount: Integer; ForShape: Boolean = False): TMVAnimationSchedule;
+  EntranceCount, ExitCount: Integer; ForShape: Boolean = False): TMVAnimationSchedule;
 // 全要素が遅延対象の場合の簡易評価。空白を含む描画には区間とDelayIndexを渡す版を使う。
 function EvaluateMVMotion(const Document: TMVDocument; Time, Duration, EntranceTime, ExitTime: Double;
   UnitIndex, UnitCount: Integer): TMVMotion; overload;
@@ -45,29 +45,30 @@ function EvaluateMVMotion(const Document: TMVDocument; Time, Duration, EntranceT
   UnitIndex, UnitCount: Integer): TMVMotion;
 begin
   Result := EvaluateMVMotion(Document, Time, Duration,
-    MVDocumentSchedule(Document, Duration, EntranceTime, ExitTime, UnitCount), UnitIndex,
+    MVDocumentSchedule(Document, Duration, EntranceTime, ExitTime, UnitCount, UnitCount), UnitIndex,
     MVAnimationOrderRank(Document.EntranceOrder, UnitIndex, UnitCount),
     MVAnimationOrderRank(Document.ExitOrder, UnitIndex, UnitCount));
 end;
 
 function MVDocumentSchedule(const Document: TMVDocument; Duration, EntranceTime, ExitTime: Double;
-  UnitCount: Integer; ForShape: Boolean): TMVAnimationSchedule;
+  EntranceCount, ExitCount: Integer; ForShape: Boolean): TMVAnimationSchedule;
 var InDelay, OutDelay: Double;
 begin
   InDelay := Document.EntranceDelay;
   OutDelay := Document.ExitDelay;
-  if not HasMVTransitionParts(Document.Entrance, Document.EntranceMotion, Document.EntranceVisibility) then
+  if not HasMVTransitionParts(Document.EntranceMotion, Document.EntranceVisibility) then
   begin
     InDelay := 0;
     if not ForShape then EntranceTime := 0;
   end;
-  if not HasMVTransitionParts(Document.ExitEffect, Document.ExitMotion, Document.ExitVisibility) then
+  if not HasMVTransitionParts(Document.ExitMotion, Document.ExitVisibility) then
   begin
     OutDelay := 0;
     if not ForShape then ExitTime := 0;
   end;
   Result := BuildMVAnimationSchedule(Duration, EntranceTime, ExitTime, InDelay, OutDelay,
-    MVAnimationOrderSteps(Document.EntranceOrder, UnitCount), MVAnimationOrderSteps(Document.ExitOrder, UnitCount));
+    MVAnimationOrderSteps(Document.EntranceOrder, EntranceCount),
+    MVAnimationOrderSteps(Document.ExitOrder, ExitCount));
 end;
 
 function UnitProgress(Time, StartTime, AnimationTime: Double): Double;
@@ -112,7 +113,7 @@ begin
     end;
     P := UnitProgress(Time, StartTime, Schedule.EntranceTime);
     Input.Direction := TMVAnimationDirection(Document.EntranceDirection);
-    ApplyMVTransition(Result, Document.Entrance, Document.EntranceMotion, Document.EntranceVisibility,
+    ApplyMVTransition(Result, Document.EntranceMotion, Document.EntranceVisibility,
       Document.EntranceTiming, P, Document.EntranceStrength, Input);
     Input.Envelope := P;
   end
@@ -128,7 +129,7 @@ begin
     P := UnitProgress(Time, StartTime, Schedule.ExitTime);
     Input.Leaving := True;
     Input.Direction := TMVAnimationDirection(Document.ExitDirection);
-    ApplyMVTransition(Result, Document.ExitEffect, Document.ExitMotion, Document.ExitVisibility,
+    ApplyMVTransition(Result, Document.ExitMotion, Document.ExitVisibility,
       Document.ExitTiming, P, Document.ExitStrength, Input);
     Input.Envelope := 1 - P;
   end;

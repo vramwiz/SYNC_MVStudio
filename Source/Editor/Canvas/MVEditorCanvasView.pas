@@ -74,7 +74,7 @@ type
 
 implementation
 
-uses MVGrouping;
+uses System.Math, MVGrouping, MVAnimatedBounds, MVAnimationTypes;
 
 constructor TMVEditorCanvasView.Create(AOwner: TComponent);
 begin
@@ -126,8 +126,24 @@ begin
 end;
 
 procedure TMVEditorCanvasView.ViewTransform;
+var
+  Bounds, GlyphBounds: TRectF;
+  I: Integer;
 begin
-  FView.Update(ClientWidth, ClientHeight, OutputWidth, OutputHeight);
+  if FView.Manual then Exit;
+  Bounds := RectF(0, 0, OutputWidth, OutputHeight);
+  if (FLayout <> nil) and (FSession <> nil) then
+    for I := 0 to High(FLayout.Units) do
+    begin
+      if FLayout.Units[I].Image = nil then Continue;
+      GlyphBounds := MVAnimatedGlyphBounds(FSession.Document.Units[I], FLayout.Units[I].Bounds,
+        FLayout.Units[I].Position, 0, DefaultMVMotion);
+      Bounds.Left := Min(Bounds.Left, GlyphBounds.Left + OutputWidth / 2);
+      Bounds.Top := Min(Bounds.Top, GlyphBounds.Top + OutputHeight / 2);
+      Bounds.Right := Max(Bounds.Right, GlyphBounds.Right + OutputWidth / 2);
+      Bounds.Bottom := Max(Bounds.Bottom, GlyphBounds.Bottom + OutputHeight / 2);
+    end;
+  FView.Update(ClientWidth, ClientHeight, Bounds);
 end;
 
 function TMVEditorCanvasView.GetSelected: Integer;

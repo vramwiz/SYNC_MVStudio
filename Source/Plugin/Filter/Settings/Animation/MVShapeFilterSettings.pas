@@ -18,7 +18,7 @@ var
   ShapeGroup: TFILTER_ITEM_GROUP;
   EffectItem, DirectionItem, LayerItem: TFILTER_ITEM_SELECT;
   ColorItem: TFILTER_ITEM_COLOR;
-  OpacityItem, PaddingItem, LineWidthItem, PeriodItem: TFILTER_ITEM_TRACK;
+  TransparencyItem, PaddingItem, LineWidthItem: TFILTER_ITEM_TRACK;
   EffectOptions: TArray<TFILTER_ITEM_SELECT_ITEM>; // 末尾にnil終端を置く。
   EffectNames: TArray<string>; // ホストが参照する選択肢名を保持する。
   DirectionOptions: array[0..4] of TFILTER_ITEM_SELECT_ITEM; // 上下左右とnil終端。
@@ -47,16 +47,15 @@ begin
   LayerOptions[0].Name := '背面';
   LayerOptions[1].Name := '前面';
   LayerOptions[1].Value := 1;
-  AddGroup(ShapeGroup, '図形アニメーション', 1);
-  AddSelect(EffectItem, '図形演出', Defaults.EffectID, @EffectOptions[0]);
-  AddColor(ColorItem, '図形色', (Defaults.Color shr 16) and $FF, (Defaults.Color shr 8) and $FF,
+  AddGroup(ShapeGroup, '図形', 1);
+  AddSelect(EffectItem, '図形 種類', Defaults.EffectID, @EffectOptions[0]);
+  AddColor(ColorItem, '図形 色', (Defaults.Color shr 16) and $FF, (Defaults.Color shr 8) and $FF,
     Defaults.Color and $FF);
-  AddTrack(OpacityItem, '図形不透明度', Defaults.Opacity * 100, 0, 100, 1);
-  AddTrack(PaddingItem, '図形余白', Defaults.Padding, 0, 512, 1);
-  AddTrack(LineWidthItem, '図形線幅', Defaults.LineWidth, 0.5, 64, 0.5);
-  AddTrack(PeriodItem, '図形周期', Defaults.Period, 0.05, 60, 0.01);
-  AddSelect(DirectionItem, '図形方向', Defaults.Direction, @DirectionOptions[0]);
-  AddSelect(LayerItem, '図形の重なり', Ord(Defaults.Foreground), @LayerOptions[0]);
+  AddTrack(TransparencyItem, '図形 透明度(%)', (1 - Defaults.Opacity) * 100, 0, 100, 1);
+  AddTrack(PaddingItem, '図形 余白', Defaults.Padding, 0, 512, 1);
+  AddTrack(LineWidthItem, '図形 線幅', Defaults.LineWidth, 0.5, 64, 0.5);
+  AddSelect(DirectionItem, '図形 方向', Defaults.Direction, @DirectionOptions[0]);
+  AddSelect(LayerItem, '図形 重なり', Ord(Defaults.Foreground), @LayerOptions[0]);
 end;
 
 function ReadMVShapeSettings: TMVShapeSettings;
@@ -64,10 +63,9 @@ begin
   Result := DefaultMVShapeSettings;
   Result.EffectID := EffectItem.Value;
   Result.Color := $FF000000 or Cardinal(ColorItem.R) shl 16 or Cardinal(ColorItem.G) shl 8 or ColorItem.B;
-  Result.Opacity := OpacityItem.Value / 100;
+  Result.Opacity := 1 - TransparencyItem.Value / 100;
   Result.Padding := PaddingItem.Value;
   Result.LineWidth := LineWidthItem.Value;
-  Result.Period := PeriodItem.Value;
   Result.Direction := DirectionItem.Value;
   Result.Foreground := LayerItem.Value = 1;
 end;

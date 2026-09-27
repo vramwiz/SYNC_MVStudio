@@ -24,7 +24,7 @@ begin
     Result.AddPair('amplitudeY', TJSONNumber.Create(Double(Value.AmplitudeY)));
     Result.AddPair('period', TJSONNumber.Create(Double(Value.Period)));
     Result.AddPair('direction', TJSONNumber.Create(Double(Value.Direction)));
-    Result.AddPair('target', TJSONNumber.Create(Int64(Value.Target)));
+    Result.AddPair('unit', TJSONNumber.Create(Int64(Value.UnitMode)));
     Result.AddPair('inStrength', TJSONNumber.Create(Double(Value.EntranceStrength)));
     Result.AddPair('holdStrength', TJSONNumber.Create(Double(Value.HoldStrength)));
     Result.AddPair('outStrength', TJSONNumber.Create(Double(Value.ExitStrength)));
@@ -36,7 +36,7 @@ begin
 end;
 
 function DecodeMVPositionMotion(const Value: TJSONValue): TMVPositionMotionSettings;
-var Obj: TJSONObject;
+var Obj: TJSONObject; LegacyTarget: Integer;
 begin
   Result := DefaultMVPositionMotion;
   if Value = nil then Exit;
@@ -48,7 +48,14 @@ begin
   Result.AmplitudeY := Obj.GetValue<Double>('amplitudeY');
   Result.Period := Obj.GetValue<Double>('period');
   Result.Direction := Obj.GetValue<Double>('direction');
-  Result.Target := Obj.GetValue<Integer>('target');
+  Result.UnitMode := Obj.GetValue<Integer>('unit', 0);
+  if Obj.GetValue('unit') = nil then
+  begin
+    LegacyTarget := Obj.GetValue<Integer>('target', 0);
+    if (LegacyTarget < 0) or (LegacyTarget > 1) then
+      raise EArgumentException.Create('追加の位置モーションの対象が不正です。');
+    if LegacyTarget = 1 then Result.UnitMode := 3;
+  end;
   Result.EntranceStrength := Obj.GetValue<Double>('inStrength');
   Result.HoldStrength := Obj.GetValue<Double>('holdStrength');
   Result.ExitStrength := Obj.GetValue<Double>('outStrength');

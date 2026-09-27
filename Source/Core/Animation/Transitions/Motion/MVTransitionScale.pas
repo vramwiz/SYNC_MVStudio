@@ -17,8 +17,6 @@ procedure MVStretchHorizontal(var Motion: TMVMotion; const Input: TMVAnimationIn
 procedure MVStretch(var Motion: TMVMotion; const Input: TMVAnimationInput);
 // 縦に伸びた細い形と基準形の間で変形する。
 procedure MVStretchVertical(var Motion: TMVMotion; const Input: TMVAnimationInput);
-// 縦方向の倍率で横倒しの状態を表す疑似フリップ。反転は行わない。
-procedure MVFlipVertical(var Motion: TMVMotion; const Input: TMVAnimationInput);
 
 implementation
 
@@ -80,14 +78,6 @@ procedure MVStretch(var Motion: TMVMotion; const Input: TMVAnimationInput);
 begin
   if Input.Direction in [madUp, madDown] then MVStretchVertical(Motion, Input)
   else MVStretchHorizontal(Motion, Input);
-end;
-
-procedure MVFlipVertical(var Motion: TMVMotion; const Input: TMVAnimationInput);
-var Visible: Double;
-begin
-  Visible := MVTransitionVisibility(Input);
-  Motion.ScaleY := Sin(Pi * Visible / 2);
-  Motion.Opacity := Visible;
 end;
 
 end.

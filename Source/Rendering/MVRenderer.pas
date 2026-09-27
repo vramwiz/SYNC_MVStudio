@@ -20,35 +20,40 @@ type
   TMVRenderPass = (mrAll, mrLetters, mrBackground, mrForegroundAndLetters);
 
 function EvaluateMVUnitMotion(const Document: TMVDocument; Time, Duration: Double;
-  const Schedule, AuxiliarySchedule: TMVAnimationSchedule; SeedIndex, SequenceIndex, UnitCount: Integer): TMVMotion;
-var InRank, OutRank: Integer; Offset: TPointF;
+  const Schedule: TMVAnimationSchedule; SeedIndex, SequenceIndex, UnitCount: Integer): TMVMotion;
+var InRank, OutRank: Integer;
 begin
   InRank := MVAnimationOrderRank(Document.EntranceOrder, SequenceIndex, UnitCount);
   OutRank := MVAnimationOrderRank(Document.ExitOrder, SequenceIndex, UnitCount);
   Result := EvaluateMVMotion(Document, Time, Duration, Schedule, SeedIndex, InRank, OutRank);
-  if Document.PositionMotion.Target = Ord(mptAnimationUnit) then
-  begin
-    // 既存演出の種には従来の番号を使い、追加位相には空白を除いた番号を使う。
-    Offset := EvaluateMVPositionMotion(Document.PositionMotion, Time, Duration,
-      AuxiliarySchedule, SequenceIndex, InRank, OutRank);
-    Result.X := Result.X + Offset.X;
-    Result.Y := Result.Y + Offset.Y;
-  end;
+end;
+
+procedure PrepareMVGroups(const Document: TMVDocument; Layout: TMVLayout;
+  const Appearance: TMVAppearanceFrame; UnitMode: Integer; out Groups: TMVAnimationGroups;
+  out Count: Integer);
+begin
+  Count := Layout.DelayCount;
+  if UnitMode = Ord(mauCharacter) then Exit;
+  BuildMVAnimationGroups(Document, Layout, UnitMode, Groups);
+  ExpandMVAnimationGroupBounds(Document, Layout, Appearance, Groups);
+  Count := Groups.Count;
 end;
 
 procedure DrawMVDocumentFrame(const Canvas: ISkCanvas; const Document: TMVDocument; Layout: TMVLayout;
   Width, Height: Integer; X, Y, Time, Duration, EntranceTime, ExitTime, PresentTime, Opacity: Double;
   Pass: TMVRenderPass);
 var
-  I, G, UnitCount: Integer;
+  I, G, AsyncGroup, UnitCount, InCount, HoldCount, OutCount, AsyncCount: Integer;
+  ActiveMode, PresentMode, SeedIndex, PresentCount, PresentIndex: Integer;
   Motion, StaticMotion, PresentMotion: TMVMotion;
   Motions: array[0..MV_MAX_UNITS - 1] of TMVMotion; // 同じ文字を図形計測と描画で二重に時間評価しない。
   GroupMotions: array[0..MV_MAX_UNITS - 1] of TMVMotion; // まとまりごとに一度だけ時間評価する。
-  Groups: TMVAnimationGroups;
-  GroupMode, ExtraPhrase: Boolean;
-  PhraseOffset: TPointF;
+  InGroups, HoldGroups, OutGroups, AsyncGroups: TMVAnimationGroups;
+  ActiveGroups, PresentGroups: PMVAnimationGroups;
+  GroupMode: Boolean;
+  Offset: TPointF;
   ShapeMotion: TMVShapeMotion;
-  Schedule, AuxiliarySchedule: TMVAnimationSchedule;
+  Schedule, ShapeSchedule, AsyncSchedule: TMVAnimationSchedule;
   ShapeBounds, GlyphBounds, LocalBounds: TRectF;
   HasShapeBounds, MeasureBounds, DrawShapes: Boolean;
   Paint: ISkPaint;
@@ -59,28 +64,49 @@ var
 begin
   if (Layout = nil) or (Length(Layout.Units) <> Length(Document.Units)) or
     (Length(Layout.Units) > MV_MAX_UNITS) then Exit;
-  GroupMode := (Time >= 0) and (Document.AnimationUnit <> Ord(mauCharacter));
-  ExtraPhrase := (Time >= 0) and (Document.PositionMotion.Kind <> Ord(mpkNone)) and
-    (Document.PositionMotion.Target = Ord(mptPhrase));
   Appearance := EvaluateMVAppearance(Document.Appearance, Time, Duration);
-  UnitCount := Layout.DelayCount;
-  if GroupMode then
+  PrepareMVGroups(Document, Layout, Appearance, Document.EntranceUnit, InGroups, InCount);
+  PrepareMVGroups(Document, Layout, Appearance, Document.HoldUnit, HoldGroups, HoldCount);
+  PrepareMVGroups(Document, Layout, Appearance, Document.ExitUnit, OutGroups, OutCount);
+  PrepareMVGroups(Document, Layout, Appearance, Document.PositionMotion.UnitMode, AsyncGroups, AsyncCount);
+  Schedule := MVDocumentSchedule(Document, Duration, EntranceTime, ExitTime, InCount, OutCount);
+  ShapeSchedule := MVDocumentSchedule(Document, Duration, EntranceTime, ExitTime, InCount, OutCount, True);
+  AsyncSchedule := MVDocumentSchedule(Document, Duration, EntranceTime, ExitTime, AsyncCount, AsyncCount, True);
+  ActiveMode := Document.HoldUnit;
+  ActiveGroups := @HoldGroups;
+  UnitCount := HoldCount;
+  if Time < Schedule.EntranceSpan then
   begin
-    // 所属を組版から分離し、ホストの単位切替では文字画像を作り直さない。
-    BuildMVAnimationGroups(Document, Layout, Groups);
-    ExpandMVAnimationGroupBounds(Document, Layout, Appearance, Groups);
-    UnitCount := Groups.Count;
+    ActiveMode := Document.EntranceUnit;
+    ActiveGroups := @InGroups;
+    UnitCount := InCount;
+  end
+  else if Time >= Duration - Schedule.ExitSpan then
+  begin
+    ActiveMode := Document.ExitUnit;
+    ActiveGroups := @OutGroups;
+    UnitCount := OutCount;
   end;
-  Schedule := MVDocumentSchedule(Document, Duration, EntranceTime, ExitTime, UnitCount);
-  // 図形と追加移動は、基本演出が「なし」でもホストの登場/退場時間を使える。
-  AuxiliarySchedule := MVDocumentSchedule(Document, Duration, EntranceTime, ExitTime, UnitCount, True);
-  PhraseOffset := PointF(0, 0);
-  if ExtraPhrase then
-    PhraseOffset := EvaluateMVPositionMotion(Document.PositionMotion, Time, Duration, AuxiliarySchedule, 0, 0, 0);
+  GroupMode := (Time >= 0) and (ActiveMode <> Ord(mauCharacter));
   if GroupMode then
-    for G := 0 to Groups.Count - 1 do
-      GroupMotions[G] := EvaluateMVUnitMotion(Document, Time, Duration, Schedule, AuxiliarySchedule, G, G, UnitCount);
-  ShapeMotion := EvaluateMVShape(Document.Shape, Time, Duration, AuxiliarySchedule.EntranceSpan, AuxiliarySchedule.ExitSpan);
+    for G := 0 to UnitCount - 1 do
+      GroupMotions[G] := EvaluateMVUnitMotion(Document, Time, Duration, Schedule, G, G, UnitCount);
+  PresentMode := Document.HoldUnit;
+  PresentGroups := @HoldGroups;
+  PresentCount := HoldCount;
+  if PresentTime < Schedule.EntranceSpan then
+  begin
+    PresentMode := Document.EntranceUnit;
+    PresentGroups := @InGroups;
+    PresentCount := InCount;
+  end
+  else if PresentTime >= Duration - Schedule.ExitSpan then
+  begin
+    PresentMode := Document.ExitUnit;
+    PresentGroups := @OutGroups;
+    PresentCount := OutCount;
+  end;
+  ShapeMotion := EvaluateMVShape(Document.Shape, Time, Duration, ShapeSchedule.EntranceSpan, ShapeSchedule.ExitSpan);
   DrawShapes := Pass <> mrLetters;
   MeasureBounds := (DrawShapes and (Document.Shape.EffectID <> MV_SHAPE_NONE) and
     (Document.Shape.Opacity > 0) and (ShapeMotion.Visibility > 0)) or
@@ -92,27 +118,40 @@ begin
     UnitImage := Layout.Units[I];
     if UnitImage.Image = nil then Continue;
     G := -1;
-    if GroupMode then G := Groups.UnitGroups[I];
+    if GroupMode then G := ActiveGroups^.UnitGroups[I];
     if Time < 0 then Motions[I] := DefaultMVMotion
     else if G >= 0 then Motions[I] := GroupMotions[G]
-    else Motions[I] := EvaluateMVUnitMotion(Document, Time, Duration, Schedule, AuxiliarySchedule,
+    else Motions[I] := EvaluateMVUnitMotion(Document, Time, Duration, Schedule,
       I, UnitImage.DelayIndex, UnitCount);
-    if ExtraPhrase then
+    if (Time >= 0) and (Document.PositionMotion.Kind <> Ord(mpkNone)) then
     begin
-      Motions[I].X := Motions[I].X + PhraseOffset.X;
-      Motions[I].Y := Motions[I].Y + PhraseOffset.Y;
+      AsyncGroup := UnitImage.DelayIndex;
+      if Document.PositionMotion.UnitMode <> Ord(mauCharacter) then
+        AsyncGroup := AsyncGroups.UnitGroups[I];
+      if AsyncGroup >= 0 then
+      begin
+        Offset := EvaluateMVPositionMotion(Document.PositionMotion, Time, Duration,
+          AsyncSchedule, AsyncGroup,
+          MVAnimationOrderRank(Document.EntranceOrder, AsyncGroup, AsyncCount),
+          MVAnimationOrderRank(Document.ExitOrder, AsyncGroup, AsyncCount));
+        Motions[I].X := Motions[I].X + Offset.X;
+        Motions[I].Y := Motions[I].Y + Offset.Y;
+      end;
     end;
     if (Time >= 0) and (Time < PresentTime) then
     begin
       // 過去像だけが退場後に残って文字を再表示しないよう、現在の表示状態も掛ける。
-      if G >= 0 then
-        PresentMotion := EvaluateMVMotion(Document, PresentTime, Duration, Schedule, G,
-          MVAnimationOrderRank(Document.EntranceOrder, G, UnitCount),
-          MVAnimationOrderRank(Document.ExitOrder, G, UnitCount))
-      else
-        PresentMotion := EvaluateMVMotion(Document, PresentTime, Duration, Schedule, I,
-          MVAnimationOrderRank(Document.EntranceOrder, UnitImage.DelayIndex, UnitCount),
-          MVAnimationOrderRank(Document.ExitOrder, UnitImage.DelayIndex, UnitCount));
+      PresentIndex := UnitImage.DelayIndex;
+      SeedIndex := I;
+      if PresentMode <> Ord(mauCharacter) then
+      begin
+        PresentIndex := PresentGroups^.UnitGroups[I];
+        SeedIndex := PresentIndex;
+      end;
+      if PresentIndex < 0 then PresentIndex := 0;
+      PresentMotion := EvaluateMVMotion(Document, PresentTime, Duration, Schedule, SeedIndex,
+        MVAnimationOrderRank(Document.EntranceOrder, PresentIndex, PresentCount),
+        MVAnimationOrderRank(Document.ExitOrder, PresentIndex, PresentCount));
       Motions[I].Opacity := Motions[I].Opacity * PresentMotion.Opacity;
       if (PresentMotion.Scale <= 0) or (PresentMotion.ScaleX <= 0.0001) or (PresentMotion.ScaleY <= 0.0001) or
         (PresentMotion.ClipRight <= PresentMotion.ClipLeft) or
@@ -128,8 +167,8 @@ begin
         StaticMotion := DefaultMVMotion;
         StaticMotion.BlurSigma := Motions[I].BlurSigma;
         GlyphBounds := MVAnimatedGlyphBounds(Document.Units[I], LocalBounds, UnitImage.Position, 0, StaticMotion);
-        GlyphBounds := MVAnimatedGroupBounds(GlyphBounds, Groups.Items[G].Pivot,
-          Groups.Items[G].TrackingIndex, Motions[I]);
+        GlyphBounds := MVAnimatedGroupBounds(GlyphBounds, ActiveGroups^.Items[G].Pivot,
+          ActiveGroups^.Items[G].TrackingIndex, Motions[I]);
       end
       else
         GlyphBounds := MVAnimatedGlyphBounds(Document.Units[I], LocalBounds,
@@ -165,9 +204,9 @@ begin
     try
       Canvas.Translate(Width / 2 + X, Height / 2 + Y);
       G := -1;
-      if GroupMode then G := Groups.UnitGroups[I];
+      if GroupMode then G := ActiveGroups^.UnitGroups[I];
       if G >= 0 then
-        DrawMVGroupedGlyph(Canvas, Document.Units[I], UnitImage, Groups.Items[G], Motion, AppearanceContext, Paint)
+        DrawMVGroupedGlyph(Canvas, Document.Units[I], UnitImage, ActiveGroups^.Items[G], Motion, AppearanceContext, Paint)
       else
       begin
         Canvas.Translate(UnitImage.Position.X + Motion.X + Motion.Tracking * UnitImage.TrackingIndex,

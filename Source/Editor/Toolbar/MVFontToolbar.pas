@@ -3,7 +3,8 @@
 // 選択文字の書式を1段のツールバーで編集する。未選択なら共通書式を変更する。
 interface
 
-uses System.Classes, Vcl.Controls, Vcl.ExtCtrls, Vcl.StdCtrls, Vcl.Buttons, MVDocument, MVEditSession, MVStyleTypes, MVEditorCanvas;
+uses System.Classes, System.Types, Vcl.Controls, Vcl.ExtCtrls, Vcl.StdCtrls,
+  Vcl.Buttons, MVDocument, MVEditSession, MVStyleTypes, MVEditorCanvas, MVFontCombo;
 
 type
   TMVFontAction = (mfaBold, mfaItalic, mfaOutline, mfaShadow);
@@ -19,7 +20,7 @@ type
     FSession: TMVEditSession; // フォームが所有する書式とUndo履歴。
     FChanged: TNotifyEvent; // 書式を確定した後に再組版を依頼する。
     FUpdating: Boolean; // 同期による再入を防ぐ。
-    FFamily: TComboBox; // インストール済み書体を選択する一覧。
+    FFamily: TMVDarkFontCombo; // インストール済み書体を選択する一覧。
     FButtons: array[TMVFontAction] of TMVFontButton; // 独立した装飾切替と色選択。
     FOutlineWidth: Single; // 縁の再有効化時に戻す幅。
     procedure FamilyChanged(Sender: TObject);
@@ -36,8 +37,12 @@ type
 
 implementation
 
-uses Winapi.Windows, System.SysUtils, System.Types, System.UITypes, System.Math,
+uses Winapi.Windows, System.SysUtils, System.UITypes, System.Math,
   Vcl.Forms, Vcl.Graphics, Vcl.Dialogs;
+
+const
+  MV_COMBO_BACKGROUND = TColor($00383838); // フォント一覧の選択欄と候補の背景。
+  MV_COMBO_TEXT       = TColor($00E8E8E8); // フォント一覧の文字色。
 
 procedure TMVFontButton.Paint;
 const Letters: array[TMVFontAction] of string = ('B', 'I', 'A', 'A');
@@ -93,16 +98,20 @@ begin
   FCanvas := EditorCanvas;
   FChanged := Changed;
   FOutlineWidth := 2;
-  FFamily := TComboBox.Create(Self);
+  FFamily := TMVDarkFontCombo.Create(Self);
+  FFamily.Style := csOwnerDrawFixed;
+  FFamily.ItemHeight := MulDiv(20, CurrentPPI, 96);
+  FFamily.Color := MV_COMBO_BACKGROUND;
+  FFamily.Font.Color := MV_COMBO_TEXT;
+  FFamily.StyleElements := FFamily.StyleElements - [seClient];
   FFamily.Parent := Self;
-  FFamily.SetBounds(MulDiv(8, CurrentPPI, 96), MulDiv(7, CurrentPPI, 96),
+  FFamily.SetBounds(MulDiv(8, CurrentPPI, 96), 0,
     MulDiv(240, CurrentPPI, 96), MulDiv(28, CurrentPPI, 96));
-  FFamily.Style := csDropDownList;
   FFamily.DropDownCount := 20;
   FFamily.Items.Assign(Screen.Fonts);
   FFamily.Sorted := True;
-  FFamily.Color := $00383838;
-  FFamily.Font.Color := $00E8E8E8;
+  FFamily.HandleNeeded;
+  FFamily.Top := Max(0, (Height - FFamily.Height) div 2);
   FFamily.Hint := 'フォント'; FFamily.ShowHint := True;
   FFamily.OnChange := FamilyChanged;
   for Kind := Low(TMVFontAction) to High(TMVFontAction) do

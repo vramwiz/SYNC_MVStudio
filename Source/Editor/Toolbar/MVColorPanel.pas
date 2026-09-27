@@ -90,11 +90,15 @@ begin
   L.SetBounds(MulDiv(8, CurrentPPI, 96), MulDiv(282, CurrentPPI, 96), MulDiv(66, CurrentPPI, 96), MulDiv(24, CurrentPPI, 96));
   FHex := TEdit.Create(Self); FHex.Parent := Self;
   FHex.SetBounds(MulDiv(80, CurrentPPI, 96), MulDiv(278, CurrentPPI, 96), MulDiv(128, CurrentPPI, 96), MulDiv(26, CurrentPPI, 96));
+  FHex.Color := $00383838; FHex.Font.Color := $00E8E8E8;
+  FHex.StyleElements := FHex.StyleElements - [seClient];
   FHex.MaxLength := 7; FHex.OnExit := EditExit; FHex.OnKeyDown := EditKey;
   L := TLabel.Create(Self); L.Parent := Self; L.Caption := '不透明度%';
   L.SetBounds(MulDiv(8, CurrentPPI, 96), MulDiv(318, CurrentPPI, 96), MulDiv(74, CurrentPPI, 96), MulDiv(24, CurrentPPI, 96));
   FAlpha := TEdit.Create(Self); FAlpha.Parent := Self;
   FAlpha.SetBounds(MulDiv(88, CurrentPPI, 96), MulDiv(314, CurrentPPI, 96), MulDiv(120, CurrentPPI, 96), MulDiv(26, CurrentPPI, 96));
+  FAlpha.Color := $00383838; FAlpha.Font.Color := $00E8E8E8;
+  FAlpha.StyleElements := FAlpha.StyleElements - [seClient];
   FAlpha.MaxLength := 6; FAlpha.OnExit := EditExit; FAlpha.OnKeyDown := EditKey;
   RefreshStyle;
 end;
@@ -133,7 +137,7 @@ begin
     FHex.Text := Format('#%.6X', [FColor and $FFFFFF]); FHex.Modified := False;
     FAlpha.Text := FormatFloat('0.#', (FColor shr 24) * 100 / 255, TFormatSettings.Invariant);
     FAlpha.Modified := False;
-    FHex.Font.Color := clWindowText; FAlpha.Font.Color := clWindowText;
+    FHex.Font.Color := $00E8E8E8; FAlpha.Font.Color := $00E8E8E8;
     FTargets[FTarget].Swatch := FColor; FTargets[FTarget].Invalidate;
   finally FUpdating := False; end;
 end;

@@ -6,7 +6,7 @@ interface
 uses System.SysUtils, System.UITypes, MVShapeTypes, MVStyleTypes, MVAppearanceTypes, MVPositionMotionTypes;
 
 const
-  MV_DOCUMENT_VERSION = 9; // 登場・退場の動きと見え方を独立して保存する。
+  MV_DOCUMENT_VERSION = 11; // 状態ごとに独立した動作単位を保存する。
   MV_MAX_TEXT_LENGTH = 1024; // 異常設定による組版の過大な負荷を抑える。
   MV_MAX_UNITS = 512; // 1フレーズ内の配置要素数の上限。
   MV_MAX_DATA_LENGTH = 32767; // ホストの単行文字列項目へ保存する上限。
@@ -30,15 +30,13 @@ type
 
 
   TMVDocument = record
-    EditorSettings: Boolean; // Trueなら共通書式を編集画面側で管理する。演出は常にホスト側。
+    EditorSettings: Boolean; // 旧文書との保存形式互換用。書式の管理先は常に保存文書。
     Text: string; // 1フレーズ全体の歌詞。LFで改行を保持する。
     Style: TMVStyle; // フレーズ共通の書式。
     Units: TArray<TMVPlacement>; // 編集画面で扱う文字単位の配置。
-    Entrance: Integer; // 旧登場演出の固定ID。引継ぎ指定の要素を復元するため残す。
     Hold: Integer; // 表示中演出の安定した識別値。
-    ExitEffect: Integer; // 旧退場演出の固定ID。新しい明示指定を優先する。
-    EntranceMotion, ExitMotion: Integer; // 動きの固定ID。-1は旧設定を引継ぎ、0は動かさない。
-    EntranceVisibility, ExitVisibility: Integer; // 見え方の固定ID。-1は引継ぎ、0は表示効果なし。
+    EntranceMotion, ExitMotion: Integer; // 動きの固定ID。0は動かさない。
+    EntranceVisibility, ExitVisibility: Integer; // 見え方の固定ID。0は表示効果なし。
     EntranceDirection: Integer; // 登場元または変形軸。上0・下1・左2・右3。
     ExitDirection: Integer; // 退場先または変形軸。上0・下1・左2・右3。
     EntranceTiming: Integer; // 登場の動き方の固定ID。0は従来の種類ごとの曲線。
@@ -46,7 +44,7 @@ type
     EntranceDelay: Single; // 次の動作単位が登場を始めるまでの秒数。0なら全て同時。
     ExitDelay: Single; // 次の動作単位が退場を始めるまでの秒数。0なら全て同時。
     EntranceOrder, ExitOrder: Integer; // 正順0・逆順1・中央2・両端3・固定ランダム4。
-    AnimationUnit: Integer; // 文字0・行1・登録グループ2・フレーズ全体3。
+    EntranceUnit, HoldUnit, ExitUnit: Integer; // 各状態の単位。文字0・行1・登録グループ2・全体3。
     EntranceStrength, HoldStrength, ExitStrength: Single; // 既存の演出への倍率。1が100%、0..10。
     Amount: Single; // 移動・揺れの強さ。出力ピクセル単位。
     CurveAmount: Single; // 波・S字・ジグザグの曲がりの強さ。0なら直線移動。
@@ -81,10 +79,6 @@ function DefaultMVDocument: TMVDocument;
 begin
   Result := Default(TMVDocument);
   Result.Style := DefaultMVStyle;
-  Result.EntranceMotion := MV_TRANSITION_INHERIT;
-  Result.ExitMotion := MV_TRANSITION_INHERIT;
-  Result.EntranceVisibility := MV_TRANSITION_INHERIT;
-  Result.ExitVisibility := MV_TRANSITION_INHERIT;
   Result.EntranceDirection := Ord(madDown);
   Result.ExitDirection := Ord(madUp);
   Result.Amount := 60;
@@ -112,9 +106,7 @@ end;
 
 procedure ValidateMVAnimation(const Document: TMVDocument);
 begin
-  if not IsMVAnimationID(makTransition, Document.Entrance) or
-    not IsMVAnimationID(makTransition, Document.ExitEffect) or
-    not IsMVAnimationID(makHold, Document.Hold) then
+  if not IsMVAnimationID(makHold, Document.Hold) then
     raise EArgumentException.Create('未対応のアニメーションが指定されています。');
   if not IsMVTransitionPartID(mtpMotion, Document.EntranceMotion) or
     not IsMVTransitionPartID(mtpMotion, Document.ExitMotion) or
@@ -129,13 +121,15 @@ begin
   CheckRange(Document.ExitStrength, 0, 10);
   CheckRange(Document.EntranceOrder, 0, Ord(High(TMVAnimationOrder)));
   CheckRange(Document.ExitOrder, 0, Ord(High(TMVAnimationOrder)));
-  CheckRange(Document.AnimationUnit, 0, Ord(High(TMVAnimationUnit)));
+  CheckRange(Document.EntranceUnit, 0, Ord(High(TMVAnimationUnit)));
+  CheckRange(Document.HoldUnit, 0, Ord(High(TMVAnimationUnit)));
+  CheckRange(Document.ExitUnit, 0, Ord(High(TMVAnimationUnit)));
   CheckRange(Document.CurveAmount, 0, 2000);
   CheckRange(Document.EntranceDelay, 0, 1);
   CheckRange(Document.ExitDelay, 0, 1);
   CheckRange(Document.EntranceDirection, Ord(Low(TMVAnimationDirection)), Ord(High(TMVAnimationDirection)));
   CheckRange(Document.ExitDirection, Ord(Low(TMVAnimationDirection)), Ord(High(TMVAnimationDirection)));
-  CheckRange(Document.Period, 0.05, 60);
+  CheckRange(Document.Period, 0.05, 120);
   ValidateMVShapeSettings(Document.Shape);
   ValidateMVAppearance(Document.Appearance);
   ValidateMVPositionMotion(Document.PositionMotion);

@@ -28,8 +28,6 @@ type
     function DecorationPoints: TMVDecorationPoints;
     // 変形・装飾・範囲選択を確定または取消してから、マウス捕捉を解除する。
     procedure FinishDrag(Cancel: Boolean);
-    // 出力座標の位置を画面中央または未選択文字の中心へ吸着させる。
-    procedure SnapPosition(var Item: TMVPlacement);
   protected
     // Skiaの共通描画結果をVCLへ転送する。
     procedure Paint; override;
@@ -59,7 +57,7 @@ type
 
 implementation
 
-uses Winapi.Windows, System.Math, System.UITypes, MVCanvasPainter;
+uses Winapi.Windows, System.Math, System.UITypes, MVCanvasPainter, MVCanvasTargets;
 
 constructor TMVEditorCanvas.Create(AOwner: TComponent);
 begin
@@ -98,7 +96,7 @@ begin
 end;
 
 procedure TMVEditorCanvas.MouseDown(Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
-var I, Hit: Integer; P: TPointF; Item: TMVPlacement; Bounds: TRectF; Decoration: TMVDecorationHandle;
+var Hit: Integer; P: TPointF; Item: TMVPlacement; Bounds: TRectF; Decoration: TMVDecorationHandle;
 begin
   inherited;
   if (FLayout = nil) or (Time >= 0) then Exit;
@@ -131,14 +129,7 @@ begin
   P := FView.ToDocument(PointF(X, Y), OutputWidth, OutputHeight);
   if FHandle = mhNone then
   begin
-    Hit := -1;
-    for I := High(FLayout.Units) downto 0 do
-    begin
-      if FLayout.Units[I].Image = nil then Continue;
-      Item := FSession.Document.Units[I];
-      Item.X := FLayout.Units[I].Position.X; Item.Y := FLayout.Units[I].Position.Y;
-      if MVHitBody(Item, FLayout.Units[I].HitBounds, P) then begin Hit := I; Break; end;
-    end;
+    Hit := HitMVCanvasUnit(FSession.Document, FLayout, P);
     if (Hit < 0) and (SelectionCount > 1) and not (ssShift in Shift) then
     begin
       FSelection.Frame(Item, Bounds);
@@ -169,32 +160,6 @@ begin
     FDragging := False; MouseCapture := True;
   end;
   Invalidate;
-end;
-
-procedure TMVEditorCanvas.SnapPosition(var Item: TMVPlacement);
-var I: Integer; BestX, BestY, DX, DY, Limit: Single; Target: TPointF;
-begin
-  Limit := 6 * CurrentPPI / 96 / FView.Zoom;
-  BestX := Limit;
-  BestY := Limit;
-  DX := 0;
-  DY := 0;
-  for I := -1 to High(FLayout.Units) do
-  begin
-    if FSelection.Contains(I) then Continue;
-    if I < 0 then Target := PointF(0, 0)
-    else
-    begin
-      if FLayout.Units[I].Image = nil then Continue;
-      Target := FLayout.Units[I].Position;
-    end;
-    if Abs(Target.X - Item.X) < BestX then
-    begin BestX := Abs(Target.X - Item.X); DX := Target.X - Item.X; end;
-    if Abs(Target.Y - Item.Y) < BestY then
-    begin BestY := Abs(Target.Y - Item.Y); DY := Target.Y - Item.Y; end;
-  end;
-  Item.X := Item.X + DX;
-  Item.Y := Item.Y + DY;
 end;
 
 procedure TMVEditorCanvas.MouseMove(Shift: TShiftState; X, Y: Integer);
@@ -254,7 +219,8 @@ begin
   FDragging := True;
   Item := MVTransform(FOriginal, FSelectionBounds, FHandle, FStart, P,
     SnapEnabled and not (ssAlt in Shift), ssShift in Shift);
-  if (FHandle = mhMove) and SnapEnabled and not (ssAlt in Shift) then SnapPosition(Item);
+  if (FHandle = mhMove) and SnapEnabled and not (ssAlt in Shift) then
+    SnapMVCanvasPosition(Item, FLayout, FSelection, FView.Zoom, CurrentPPI);
   FSelection.ApplyFrame(Item);
   Invalidate;
 end;

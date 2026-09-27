@@ -52,9 +52,15 @@ begin
   Brush := TSkPaint.Create;
   Brush.Color := $FF383A40;
   Surface.Canvas.DrawRect(RectF(0, 0, Output.Width, Output.Height), Brush);
-  Surface.Canvas.ClipRect(RectF(0, 0, Output.Width, Output.Height));
-  if Background <> nil then
-    Surface.Canvas.DrawImageRect(Background, RectF(0, 0, Output.Width, Output.Height), TSkSamplingOptions.High);
+  Surface.Canvas.Save;
+  try
+    Surface.Canvas.ClipRect(RectF(0, 0, Output.Width, Output.Height));
+    if Background <> nil then
+      Surface.Canvas.DrawImageRect(Background, RectF(0, 0, Output.Width, Output.Height), TSkSamplingOptions.High);
+  finally
+    Surface.Canvas.Restore;
+  end;
+  // 出力枠は背景だけに適用し、編集時の文字は枠外も表示・選択できるようにする。
   DrawMVDocument(Surface.Canvas, Document, Layout, Output.Width, Output.Height, 0, 0, -1, 1, 0, 0);
   Surface.Canvas.Restore;
   if Length(Selected) > 1 then

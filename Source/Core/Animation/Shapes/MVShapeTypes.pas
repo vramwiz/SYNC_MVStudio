@@ -75,7 +75,7 @@ begin
   CheckShapeRange(Settings.Opacity, 0, 1);
   CheckShapeRange(Settings.Padding, 0, 512);
   CheckShapeRange(Settings.LineWidth, 0.5, 64);
-  CheckShapeRange(Settings.Period, 0.05, 60);
+  CheckShapeRange(Settings.Period, 0.05, 120);
   CheckShapeRange(Settings.Direction, 0, 3);
 end;
 
